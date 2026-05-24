@@ -1,21 +1,41 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_security import UserMixin, RoleMixin
 
 db = SQLAlchemy()
 
-class Admin(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    password = db.Column(db.String, nullable = False)
+roles_users = db.Table('roles_users',
+                       db.Column('user_id',db.Integer(), db.ForeignKey('user.id')),
+                       db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+
+class Role(db.Model, RoleMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String, unique=True, nullable=False)
+    password = db.Column(db.String, nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    fs_uniquifier = db.Column(db.String, unique=True, nullable=False)
+
+    roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
+
+    student_profile = db.relationship('Student', backref='user_account', uselist=False, cascade="all, delete-orphan")
+    company_profile = db.relationship('Company', backref='user_account', uselist=False, cascade="all, delete-orphan")
     
 class Student(db.Model):
     __tablename__ = 'student'
 
-    id = db.Column(db.Text, primary_key = True)
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+
     name = db.Column(db.Text, nullable = False)
     dob = db.Column(db.Date, nullable = False)  
-    email = db.Column(db.Text, nullable = False, unique = True)
-    education = db.Column(db.Text, nullable = False, default = 'None')
+    phone_number = db.Column(db.String(15), unique = True, nullable = False)
+    education = db.Column(db.Text, default = 'None')
     skills = db.Column(db.Text, default = 'None')
     working_experience = db.Column(db.Integer, default = 0)
+    cgpa = db.Column(db.Float, default = 0.0)
 
     application = db.relationship('Application', back_populates = 'student', cascade = 'all, delete-orphan')
 
@@ -23,6 +43,8 @@ class Company(db.Model):
     __tablename__ = 'company'
 
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    
     name = db.Column(db.Text, unique = True, nullable = False)
     hr_contact = db.Column(db.Text, unique = True, nullable = False)
     website = db.Column(db.Text, unique = True, nullable = False)
