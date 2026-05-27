@@ -53,8 +53,14 @@ onMounted(async () => {
         <div v-if="profile.industry">
           <p><strong>Industry:</strong> {{ profile.industry }}</p>
         </div>
+        <div v-if="profile.students">
+          <p><strong>Total Students:</strong> {{ profile.students.length }}</p>
+        </div>
+        <div v-if="profile.companies">
+          <p><strong>Total Companies:</strong> {{ profile.companies.length }}</p>
+        </div>
         <div v-if="profile.drives">
-          <p><strong>Placement Drives:</strong> {{ profile.drives.length }}</p>
+          <p><strong>Total Placement Drives:</strong> {{ profile.drives.length }}</p>
         </div>
       </div>
     </div>

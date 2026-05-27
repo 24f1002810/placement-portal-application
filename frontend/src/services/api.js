@@ -9,7 +9,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-    // Don't send token for login endpoint
+    // Don't send token for login endpoints
     if (!config.url.includes('/login')) {
         const token = localStorage.getItem('auth_token');
         if (token) {

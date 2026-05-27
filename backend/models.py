@@ -39,6 +39,16 @@ class Student(db.Model):
 
     application = db.relationship('Application', back_populates = 'student', cascade = 'all, delete-orphan')
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.user_account.email,
+            'phone_number': self.phone_number,
+            'cgpa': self.cgpa,
+            'skills': [s.strip() for s in (self.skills or '').split(',') if s.strip()]
+        }
+
 class Company(db.Model):
     __tablename__ = 'company'
 
@@ -53,6 +63,15 @@ class Company(db.Model):
     description = db.Column(db.Text, nullable = False)
     industry = db.Column(db.Text)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'industry': self.industry,
+            'location': self.location,
+            'approval_status': self.approval_status,
+            'description': self.description
+        }
     placement_drive = db.relationship('PlacementDrive', back_populates = 'company', cascade = 'all, delete-orphan') 
 
 class PlacementDrive(db.Model):
@@ -67,9 +86,23 @@ class PlacementDrive(db.Model):
     status = db.Column(db.String, nullable = False, default = 'pending')
     salary = db.Column(db.Integer, nullable = False)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'company_id': self.company_id,
+            'company_name': self.company.name,
+            'job_title': self.job_title,
+            'job_description': self.job_description,
+            'eligibility': self.eligibility,
+            'deadline': self.deadline.isoformat() if self.deadline else None,
+            'status': self.status,
+            'salary': self.salary
+        }
+    
     company = db.relationship('Company', back_populates = 'placement_drive')
     application = db.relationship('Application', back_populates = 'placement_drive', cascade = 'all, delete-orphan')
 
+    
 class Application(db.Model):
     __tablename__ = 'application'
 
@@ -78,6 +111,15 @@ class Application(db.Model):
     drive_id = db.Column(db.Integer, db.ForeignKey('placement_drive.id', ondelete='CASCADE'), nullable = False)
     date = db.Column(db.Date, nullable = False)
     status = db.Column(db.String, default = 'applied')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'student_id': self.student_id,
+            'drive_id': self.drive_id,
+            'date': self.date.isoformat() if self.date else None,
+            'status': self.status
+        }
 
     student = db.relationship('Student', back_populates = 'application')
     placement_drive = db.relationship('PlacementDrive', back_populates = 'application')
