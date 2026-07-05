@@ -1,61 +1,53 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import api from "@/services/api"; // Import the instance we just created
+import { useStore } from "vuex";
+import api from "@/services/api";
 
 const email = ref("");
 const password = ref("");
 const errorMessage = ref("");
 const isLoading = ref(false);
 const router = useRouter();
+const store = useStore();
 
 const handleLogin = async () => {
   isLoading.value = true;
+  errorMessage.value = "";
+
   try {
-    // Note the ?include_auth_token=true parameter
-    const response = await api.post("/api/login?include_auth_token=true", {
+    // Use Vuex action to login
+    const user = await store.dispatch("user/login", {
       email: email.value,
       password: password.value,
     });
 
-    console.log("Full response:", JSON.stringify(response.data, null, 2));
-    
-    // Extract the token
-    const token = response.data.response.user.authentication_token;
+    console.log("User logged in:", user);
+    console.log("Store isAuthenticated:", store.getters["user/isAuthenticated"]);
+    console.log("Store isAdmin:", store.getters["user/isAdmin"]);
+    console.log("Store user:", store.getters["user/getUser"]);
 
-    console.log("Token:", token);
-
-    if (token) {
-      // Save it to localStorage
-      localStorage.setItem("auth_token", token);
-
-      // Fetch user role from dashboard endpoint
-      try {
-        const dashboardResponse = await api.post("/api/dashboard");
-        const roles = dashboardResponse.data.profile.roles || [];
-        console.log("User roles:", roles);
-
-        if (roles.includes("admin")) {
-          router.push("/admin");
-        } else if (roles.includes("company")) {
-          router.push("/dashboard");
-        } else if (roles.includes("student")) {
-          router.push("/dashboard");
-        } else {
-          router.push("/dashboard");
-        }
-      } catch (dashboardError) {
-        console.error("Failed to fetch user roles:", dashboardError);
-        router.push("/dashboard");
-      }
+    // Navigate based on role
+    if (user.role === "admin") {
+      console.log("Redirecting to AdminHome");
+      router.push({ name: "AdminHome" });
+    } else if (user.role === "company") {
+      console.log("Redirecting to company Dashboard");
+      router.push({ name: "CompanyDashboard" });
     }
   } catch (error) {
     errorMessage.value =
-      error.response?.data?.response?.message || "Invalid email or password.";
+      error.response?.data?.response?.message ||
+      error.response?.data?.message ||
+      "Invalid email or password.";
     console.error("Login failed:", error);
   } finally {
     isLoading.value = false;
   }
+};
+
+const register = () => {
+  router.push({ name: "Register" });
 };
 </script>
 <template>
@@ -96,6 +88,7 @@ const handleLogin = async () => {
           {{ isLoading ? "Signing In..." : "Sign In" }}
         </button>
       </form>
+      <p class="m-3">New User? <a href="#" @click="register">Register Here</a></p>
     </div>
   </div>
 </template>

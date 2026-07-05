@@ -17,7 +17,7 @@ const studentForm = ref({
   confirmPassword: "",
   rollNo: "",
   phone: "",
-  dob: ""
+  dob: "",
 });
 
 // Company form fields
@@ -53,7 +53,7 @@ const handleStudentRegister = async () => {
       rollNo: studentForm.value.rollNo,
       cgpa: studentForm.value.cgpa,
       phone: studentForm.value.phone,
-      dob: studentForm.value.dob
+      dob: studentForm.value.dob,
     });
 
     successMessage.value = "Student registration successful! Redirecting to login...";
@@ -61,9 +61,8 @@ const handleStudentRegister = async () => {
       router.push("/login");
     }, 1500);
   } catch (error) {
-    errorMessage.value =
-      error.response?.data?.message || "Registration failed. Please try again.";
-    console.error("Student registration failed:", error);
+    errorMessage.value = "Registration Failed";
+    console.error("Student registration failed:", error.response.data.message);
   } finally {
     isLoading.value = false;
   }
@@ -250,7 +249,7 @@ const handleCompanyRegister = async () => {
             id="company-email"
             v-model="companyForm.email"
             required
-            placeholder="hr@company.com"
+            placeholder="company@domain.com"
             :disabled="isLoading"
           />
         </div>

@@ -62,11 +62,11 @@ def setup_database():
             company_profile = Company(
                 user_id=company_user.id,
                 name="Acme Corp",
-                hr_contact="hr@acmecorp.com",
+                hr_phone="8000413114",
                 website="www.acmecorp.com",
                 location="Udaipur, Rajasthan",
                 description="Innovative software solutions provider.",
-                industry="IT Services"
+                industry="IT Services",
             )
             db.session.add(company_profile)
 

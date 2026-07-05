@@ -46,7 +46,9 @@ class Student(db.Model):
             'email': self.user_account.email,
             'phone_number': self.phone_number,
             'cgpa': self.cgpa,
-            'skills': [s.strip() for s in (self.skills or '').split(',') if s.strip()]
+            'skills': [s.strip() for s in (self.skills or '').split(',') if s.strip()],
+            'education': self.education,
+            'active': self.user_account.active if self.user_account else True
         }
 
 class Company(db.Model):
@@ -56,7 +58,7 @@ class Company(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     
     name = db.Column(db.Text, unique = True, nullable = False)
-    hr_contact = db.Column(db.Text, unique = True, nullable = False)
+    hr_phone = db.Column(db.Text, unique = True, nullable = False)
     website = db.Column(db.Text, unique = True, nullable = False)
     approval_status = db.Column(db.Text, default = 'pending')
     location = db.Column(db.Text, nullable = False)
@@ -70,7 +72,11 @@ class Company(db.Model):
             'industry': self.industry,
             'location': self.location,
             'approval_status': self.approval_status,
-            'description': self.description
+            'description': self.description,
+            'website': self.website,
+            'hr_phone': self.hr_phone,
+            'email': self.user_account.email,
+            'active': self.user_account.active
         }
     placement_drive = db.relationship('PlacementDrive', back_populates = 'company', cascade = 'all, delete-orphan') 
 
@@ -81,7 +87,10 @@ class PlacementDrive(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('company.id', ondelete='CASCADE'), nullable = False)
     job_title = db.Column(db.String, nullable = False)
     job_description = db.Column(db.String, nullable = False)
-    eligibility = db.Column(db.String, nullable = False)
+    skills_required = db.Column(db.String, nullable = False)
+    min_cgpa = db.Column(db.Float, nullable = False)
+    working_experience_required = db.Column(db.Integer, nullable = False)
+
     deadline = db.Column(db.Date, nullable = False)
     status = db.Column(db.String, nullable = False, default = 'pending')
     salary = db.Column(db.Integer, nullable = False)
@@ -93,7 +102,9 @@ class PlacementDrive(db.Model):
             'company_name': self.company.name,
             'job_title': self.job_title,
             'job_description': self.job_description,
-            'eligibility': self.eligibility,
+            'skills_required': self.skills_required,
+            'min_cgpa': self.min_cgpa,
+            'working_experience_required': self.working_experience_required,
             'deadline': self.deadline.isoformat() if self.deadline else None,
             'status': self.status,
             'salary': self.salary

@@ -1,73 +1,19 @@
 from flask import current_app as app, jsonify, request
 from app import user_datastore
-from flask_security import auth_required, current_user, hash_password, roles_required
-from werkzeug.security import check_password_hash
+from flask_security import auth_required, current_user, hash_password, roles_required, roles_accepted
+from flask_security.utils import verify_password
 import uuid
 from models import *
 from datetime import date
+import admin, company
 
-# Custom login endpoint that handles JSON requests
-@app.route('/api/login', methods=['POST'])
-def login():
-    try:
-        print(f"Login request received")
-        
-        data = request.get_json()
-        print(f"Parsed JSON data: {data}")
-        
-        if not data:
-            print("No JSON data provided")
-            return jsonify({"response": {"message": "No JSON data provided"}}), 400
-            
-        email = data.get('email')
-        password = data.get('password')
-        
-        print(f"Email: {email}, Password provided: {password is not None}")
-
-        if not email or not password:
-            print("Email or password missing")
-            return jsonify({"response": {"message": "Email and password are required"}}), 400
-
-        user = User.query.filter_by(email=email).first()
-        print(f"User found: {user is not None}")
-        
-        if not user:
-            print(f"User with email {email} not found")
-            return jsonify({"response": {"message": "Invalid email or password"}}), 400
-        
-        # Check password
-        password_valid = check_password_hash(user.password, password)
-        print(f"Password valid: {password_valid}")
-        
-        if not password_valid:
-            print("Password does not match")
-            return jsonify({"response": {"message": "Invalid email or password"}}), 400
-
-        # Check if include_auth_token query parameter is present
-        include_token = request.args.get('include_auth_token', 'false').lower() == 'true'
-        
-        if include_token:
-            # Use the user's fs_uniquifier as the authentication token
-            token = user.fs_uniquifier
-            print(f"Token generated: {token[:10]}...")
-            return jsonify({
-                "response": {
-                    "user": {
-                        "authentication_token": token,
-                        "email": user.email,
-                        "id": user.id
-                    },
-                    "message": "Login successful"
-                }
-            }), 200
-        else:
-            return jsonify({"response": {"message": "Login successful"}}), 200
-    except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        print(f"Login error: {str(e)}")
-        print(f"Traceback: {error_trace}")
-        return jsonify({"response": {"message": f"Login error: {str(e)}"}}), 500
+@app.route('/logout', methods=['POST'])
+@auth_required('token')
+def logout():
+    # Invalidate the current user's session by changing the fs_uniquifier
+    current_user.fs_uniquifier = uuid.uuid4().hex
+    db.session.commit()
+    return jsonify({"message": "Logged out successfully"}), 200
 
 @app.route('/api/dashboard', methods=['POST', 'GET'])
 @auth_required('token')
@@ -94,9 +40,18 @@ def dashboard():
 
         return jsonify({ "profile": profile_data, 'message': "Welcome to the Company Dashboard"})
     elif 'admin' in roles:
-        profile_data['students'] = [student.to_dict() for student in Student.query.all()]
-        profile_data['companies'] = [company.to_dict() for company in Company.query.all()]
-        profile_data['drives'] = [drive.to_dict() for drive in PlacementDrive.query.all()]
+        profile_data['student_count'] = Student.query.count()
+        profile_data['company_count'] = Company.query.filter_by(approval_status='approved').count()
+        profile_data['drive_count'] = PlacementDrive.query.filter_by(status='approved').count()
+        
+        profile_data['application_count'] = db.session.query(Application).join(
+            PlacementDrive, Application.drive_id == PlacementDrive.id
+        ).filter(
+            PlacementDrive.status == 'approved',
+        ).count()
+
+        profile_data['pending_company_registrations'] = Company.query.filter_by(approval_status='pending').count()
+        profile_data['pending_drives'] = PlacementDrive.query.filter_by(status='pending').count()
         return jsonify({ "profile": profile_data, 'message': "Welcome to the Admin Dashboard"})
     else:
         return jsonify({"message": "Unknown role"}), 400
@@ -143,23 +98,92 @@ def register():
                 name=data.get('companyName'),
                 industry=data.get('industry'),
                 website=data.get('website'),
-                hr_contact=data.get('hrContact'),
+                hr_phone=data.get('hrContact'),
                 location=data.get('location'),
                 description=data.get('description')
             )
             db.session.add(company_profile)
 
         db.session.commit()
-        return jsonify({"message": f"User registered successfully as {role}"}), 201
+        return jsonify({"message": f"User registered successfully as {role}"}), 200
     except Exception as e:
         db.session.rollback()
         print(f"Registration error: {str(e)}")
-        return jsonify({"message": f"Registration error: {str(e)}"}), 500
+        return jsonify({"message": "Registration error"}), 500
 
-@app.route('/api/admin', methods=['POST'])
-@auth_required('token')
-@roles_required('admin')
-def admin():
+
+@app.route('/api/placement-drive/<int:drive_id>', methods=['GET', 'POST', 'DELETE'])
+@auth_required()
+@roles_accepted('admin', 'company', 'student')
+def manage_drive(drive_id):
+    drive = PlacementDrive.query.get(drive_id)
+    if not drive:
+        return jsonify({"message": "Placement Drive not found"}), 404
+
+    if request.method == 'GET':
+        return jsonify({"drive": drive.to_dict()})
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if 'deadline' in data and data['deadline']:
+            try:
+                from datetime import date
+                data['deadline'] = date.fromisoformat(data['deadline'])
+            except ValueError:
+                pass # let it fail or handle if it's already a date/invalid
+
+        # Update drive attributes based on data
+        for key, value in data.items():
+            setattr(drive, key, value)
+        db.session.commit()
+        return jsonify({"message": "Placement Drive updated"})
+
+    elif request.method == 'DELETE' and (current_user.has_role('admin') or current_user.has_role('company')):
+        db.session.delete(drive)
+        db.session.commit()
+        return jsonify({"message": "Placement Drive successfully deleted"})
     
-    return jsonify({"message": "Welcome to the Admin Dashboard"})
     
+@app.route('/api/student/<int:student_id>', methods=['GET', 'POST', 'DELETE'])
+@auth_required()
+@roles_accepted('admin', 'student', 'company')
+def get_student_profile(student_id):
+    student = Student.query.get(student_id)
+    if not student:
+        return jsonify({"message": "Student not found"}), 404
+    
+    if request.method == 'GET':
+        student_data = student.to_dict()
+        student_data['dob'] = student.dob.isoformat() if student.dob else None 
+        student_data['blocked'] = not student.user_account.active
+        return jsonify({"student": student_data})
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        dob = date.fromisoformat(data.get('dob')) if data.get('dob') else None
+
+        if data.get('block') is not None:
+            block = data.get('block')
+            if block:
+                student.user_account.active = 0
+                db.session.commit()
+                return jsonify({"message": "Student account blocked"})
+            else:
+                student.user_account.active = 1
+                db.session.commit()
+                return jsonify({"message": "Student account unblocked"})
+        else:
+            for key, value in data.items():
+                if key == 'dob':
+                    setattr(student, key, dob)
+                else:
+                    setattr(student, key, value)
+            db.session.commit()
+            return jsonify({"message": "Student profile updated"})
+
+    elif request.method == 'DELETE' and (current_user.has_role('admin') or current_user.has_role('company')):
+        user = User.query.get(student.user_id)
+        db.session.delete(student)
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"message": "Student profile deleted"})
