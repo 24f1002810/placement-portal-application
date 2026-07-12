@@ -2,10 +2,12 @@
 import { ref, onMounted, computed } from "vue";
 import api from "@/services/api";
 import { useRouter, useRoute } from "vue-router";
+import { useStore } from "vuex";
 import Edit_company from "./edit_company.vue";
 
 const router = useRouter();
 const route = useRoute();
+const store = useStore();
 const loading = ref(true);
 const error = ref("");
 const drives = ref([]);
@@ -15,8 +17,16 @@ const sortOrder = ref("asc");
 const filterStatus = ref("all");
 const filterSalary = ref(0);
 
-// Determine if we're viewing company-specific drives
-const companyId = computed(() => route.params.id);
+const companyId = computed(() => {
+  if (route.params.id) {
+    return route.params.id;
+  }
+  const role = store.getters["user/getUserRole"];
+  if (role === "company") {
+    return store.getters["user/getCompanyId"];
+  }
+  return null;
+});
 const isCompanyView = computed(() => !!companyId.value);
 
 onMounted(async () => {
@@ -30,10 +40,8 @@ const fetchDrives = async () => {
   try {
     let response;
     if (isCompanyView.value) {
-      // Fetch drives for specific company
       response = await api.get(`api/company/${companyId.value}/placement-drives`);
     } else {
-      // Fetch all drives for admin view
       response = await api.get("api/admin/placement-drives");
     }
     drives.value = response.data.placement_drives;
@@ -115,14 +123,6 @@ const formatDate = (dateString) => {
   });
 };
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
-
 const viewDriveDetails = (driveId) => {
   router.push(`/placement-drive/${driveId}`);
 };
@@ -139,10 +139,6 @@ const getRejectedCount = () => {
   return drives.value.filter((d) => d.status === "rejected").length;
 };
 
-const getMaxSalary = () => {
-  if (drives.value.length === 0) return 0;
-  return Math.max(...drives.value.map((d) => d.salary || 0));
-};
 
 const editDrive = (driveId) => {
   router.push(`/placement-drive/${driveId}/edit`);
@@ -180,7 +176,7 @@ function deleteDrive(driveId) {
         </p>
       </div>
       <div class="col-auto">
-        <div class="d-flex gap-3 flex-wrap">
+        <div class="d-flex gap-3">
           <button
             v-if="isCompanyView"
             @click="router.back()"
@@ -237,20 +233,6 @@ function deleteDrive(driveId) {
               <option value="closed">Closed</option>
               <option value="rejected">Rejected</option>
             </select>
-          </div>
-          <div class="col-lg-2">
-            <label class="form-label">Min Salary</label>
-            <input
-              v-model.number="filterSalary"
-              type="range"
-              class="form-range"
-              :min="0"
-              :max="getMaxSalary()"
-              step="1000"
-            />
-            <small class="text-muted d-block mt-1">{{
-              formatCurrency(filterSalary)
-            }}</small>
           </div>
         </div>
       </div>

@@ -19,53 +19,23 @@ onMounted(async () => {
   }
 });
 
-const approveRequest = (requestId) => {
-  
-  console.log("Approving request ID:", requestId);
-  loading.value = true;
-  error.value = "";
-  api
-    .post(`/api/registration-requests`, { company_id: requestId, action: "approve" })
-    .then((response) => {
-      message.value = response.data.message || "Request approved successfully";
-      return api.get("/api/registration-requests");
-    })
-    .then((response) => {
-      companies.value = response.data.pending_companies;
-    })
-    .catch((err) => {
-      error.value = err.response?.data?.message || "Failed to approve request";
+const requestStatusUpdate = async (requestId, action) => {
+  if (confirm(`Are you sure you want to ${action} this company?`)){
+    loading.value = true;
+    error.value = "";
+    try {
+      const response = await api.post(`/api/registration-requests`, {
+        company_id: requestId,
+        action: action,
+      });
+      message.value = response.data.message;
+    } catch (err) {
+      error.value = err.response?.data?.message;
       message.value = "";
-      console.error("Approval error:", err);
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-};
-
-const rejectRequest = (requestId) => {
-  
-  console.log("Rejecting request ID:", requestId);
-  loading.value = true;
-  error.value = "";
-  api
-    .post(`/api/registration-requests`, { company_id: requestId, action: "reject" })
-    .then((response) => {
-      message.value = response.data.message || "Request rejected successfully";
-      return api.get("/api/registration-requests");
-    })
-    .then((response) => {
-      companies.value = response.data.pending_companies;
-    })
-    .catch((err) => {
-      error.value = err.response?.data?.message || "Failed to reject request";
-      message.value = "";
-      console.error("Rejection error:", err);
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-};
+      console.error("Update error:", err);
+    }
+  }
+}
 </script>
 <template>
   <div class="container">
@@ -113,15 +83,15 @@ const rejectRequest = (requestId) => {
             <td>{{ company.name }}</td>
             <td>{{ company.location }}</td>
             <td>
-              <button class="btn btn-success btn-sm" @click="approveRequest(company.id)">
+              <button class="btn btn-success btn-sm" @click="requestStatusUpdate(company.id, 'approve')">
                 Approve
               </button>
-              <button class="btn btn-danger btn-sm" @click="rejectRequest(company.id)">
+              <button class="btn btn-danger btn-sm" @click="requestStatusUpdate(company.id, 'reject')">
                 Reject
               </button>
               <button
                 class="btn btn-secondary btn-sm"
-                @click="$router.push(`/company/${company.id}`)"
+                @click="$router.push(`/company/${company.id}/profile`)"
               >
                 View Details
               </button>

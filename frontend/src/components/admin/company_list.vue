@@ -83,7 +83,7 @@ const getStatusBadgeClass = (status) => {
 };
 
 const viewCompanyDetails = (companyId) => {
-    router.push(`/company/${companyId}`);
+    router.push({ name: "CompanyProfile", params: { id: companyId } });
 };
 
 const getApprovedCount = () => {
@@ -96,7 +96,7 @@ const getPendingCount = () => {
 
 
 const editCompany = (companyId) => {
-    router.push(`/company/${companyId}/edit`)
+    router.push({name:'AdminEditCompany', params:{id:companyId}})
 }
 
 async function deleteCompany(companyId){
@@ -113,33 +113,21 @@ async function deleteCompany(companyId){
     }
 }
 
-const approveCompany = async (companyId) => {
-    if (confirm("Are you sure you want to approve this company?")){
-        api.post('/api/registration-requests', {'company_id':companyId, 'action':'approve'})
+
+const editCompanyStatus = async (companyId, action) => {
+    if (confirm(`Are you sure you want to ${action} company ${companyId}?`)) {
+        api.post('/api/registration-requests', {'company_id':companyId, 'action':action})
         .then((response) => {
-            alert(response.data.message || 'Company approved');
+            alert(response.data.message || `Company ${action} successfully`);
             fetchCompanies();
         })
         .catch((error) => {
-            alert('Failed to approve company');
-            console.log('Error in approving company:', error);
+            alert(`Failed to ${action} company`);
+            console.log(`Error in ${action} company:`, error);
         })
     }
 }
 
-const rejectCompany = async (companyId) => {
-    if (confirm("Are you sure you want to reject this company?")){
-        api.post('/api/registration-requests', {'company_id':companyId, 'action':'reject'})
-        .then((response) => {
-            alert(response.data.message || 'Company rejected');
-            fetchCompanies();
-        })
-        .catch((error) => {
-            alert('Failed to reject company');
-            console.log('Error in rejecting company:', error);
-        })
-    }
-}
 
 function updateBlockStatus(id, is_blocked) {
   if (id) {
@@ -319,14 +307,14 @@ function updateBlockStatus(id, is_blocked) {
                                         <button
                                             class="btn btn-sm btn-success"
                                             title="Approve"
-                                            @click="approveCompany(company.id)"
+                                            @click="editCompanyStatus(company.id, 'approve')"
                                         >
                                             Approve
                                         </button>
                                         <button
                                             class="btn btn-sm btn-outline-danger"
                                             title="Reject"
-                                            @click="rejectCompany(company.id)"
+                                            @click="editCompanyStatus(company.id, 'reject')"
                                         >
                                             Reject
                                         </button>

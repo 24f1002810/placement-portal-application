@@ -107,7 +107,8 @@ class PlacementDrive(db.Model):
             'working_experience_required': self.working_experience_required,
             'deadline': self.deadline.isoformat() if self.deadline else None,
             'status': self.status,
-            'salary': self.salary
+            'salary': self.salary,
+            'application_count': len(self.application) if self.application else 0
         }
     
     company = db.relationship('Company', back_populates = 'placement_drive')
@@ -122,6 +123,7 @@ class Application(db.Model):
     drive_id = db.Column(db.Integer, db.ForeignKey('placement_drive.id', ondelete='CASCADE'), nullable = False)
     date = db.Column(db.Date, nullable = False)
     status = db.Column(db.String, default = 'applied')
+    interview_date = db.Column(db.Date, nullable = True)
 
     def to_dict(self):
         return {
@@ -129,7 +131,8 @@ class Application(db.Model):
             'student_id': self.student_id,
             'drive_id': self.drive_id,
             'date': self.date.isoformat() if self.date else None,
-            'status': self.status
+            'status': self.status,
+            'interview_date': self.interview_date.isoformat() if self.interview_date else None
         }
 
     student = db.relationship('Student', back_populates = 'application')

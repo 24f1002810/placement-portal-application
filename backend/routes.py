@@ -5,7 +5,7 @@ from flask_security.utils import verify_password
 import uuid
 from models import *
 from datetime import date
-import admin, company
+import admin, company, student
 
 @app.route('/logout', methods=['POST'])
 @auth_required('token')
@@ -27,23 +27,28 @@ def dashboard():
 
     if 'student' in roles:
         profile_data['name'] = current_user.student_profile.name
-        # Convert skills from string to array
+        profile_data['student_id'] = current_user.student_profile.id
         skills_str = current_user.student_profile.skills or ''
         profile_data['skills'] = [s.strip() for s in skills_str.split(',') if s.strip()]
         profile_data['applications'] = [app.to_dict() for app in current_user.student_profile.application]
+        profile_data['role'] = 'student'
         return jsonify({ "profile": profile_data, 'message': "Welcome to the Student Dashboard"})
+
     elif 'company' in roles:
+        profile_data['company_id'] = current_user.company_profile.id
         profile_data['company_name'] = current_user.company_profile.name
         profile_data['industry'] = current_user.company_profile.industry
         profile_data['description'] = current_user.company_profile.description
+        profile_data['approval_status'] = current_user.company_profile.approval_status
         profile_data['drives'] = [drive.to_dict() for drive in current_user.company_profile.placement_drive]
-
+        profile_data['role'] = 'company'
         return jsonify({ "profile": profile_data, 'message': "Welcome to the Company Dashboard"})
+        
     elif 'admin' in roles:
         profile_data['student_count'] = Student.query.count()
         profile_data['company_count'] = Company.query.filter_by(approval_status='approved').count()
         profile_data['drive_count'] = PlacementDrive.query.filter_by(status='approved').count()
-        
+        profile_data['role'] = 'admin'
         profile_data['application_count'] = db.session.query(Application).join(
             PlacementDrive, Application.drive_id == PlacementDrive.id
         ).filter(
@@ -80,8 +85,7 @@ def register():
             fs_uniquifier=uuid.uuid4().hex
         )
         db.session.add(new_user)
-        db.session.flush()  # Flush to get the new user's ID
-
+        db.session.flush() 
         user_datastore.add_role_to_user(new_user, role)
 
         if role == 'student':
@@ -121,69 +125,105 @@ def manage_drive(drive_id):
         return jsonify({"message": "Placement Drive not found"}), 404
 
     if request.method == 'GET':
-        return jsonify({"drive": drive.to_dict()})
+        drive_dict = drive.to_dict()
+        if current_user.has_role('student') and current_user.student_profile:
+            app_inst = Application.query.filter_by(student_id=current_user.student_profile.id, drive_id=drive_id).first()
+            drive_dict['has_applied'] = bool(app_inst)
+            if app_inst:
+                drive_dict['application_id'] = app_inst.id
+        return jsonify({"drive": drive_dict})
 
     elif request.method == 'POST':
         data = request.get_json()
-        if 'deadline' in data and data['deadline']:
+        
+        if 'status' in data:
+            drive.status = data['status']
+            db.session.commit()
+            return jsonify({"message": f"Drive status updated to {data['status']}"})
+
+        elif 'deadline' in data and data['deadline']:
             try:
                 from datetime import date
                 data['deadline'] = date.fromisoformat(data['deadline'])
             except ValueError:
-                pass # let it fail or handle if it's already a date/invalid
+                pass
 
-        # Update drive attributes based on data
-        for key, value in data.items():
-            setattr(drive, key, value)
-        db.session.commit()
-        return jsonify({"message": "Placement Drive updated"})
+            for key, value in data.items():
+                setattr(drive, key, value)
+            db.session.commit()
+            return jsonify({"message": "Placement Drive updated"})
 
     elif request.method == 'DELETE' and (current_user.has_role('admin') or current_user.has_role('company')):
         db.session.delete(drive)
         db.session.commit()
         return jsonify({"message": "Placement Drive successfully deleted"})
-    
-    
-@app.route('/api/student/<int:student_id>', methods=['GET', 'POST', 'DELETE'])
+        
+@app.route('/api/placement-drive/<int:drive_id>/apply', methods=['POST'])
 @auth_required()
-@roles_accepted('admin', 'student', 'company')
-def get_student_profile(student_id):
-    student = Student.query.get(student_id)
-    if not student:
-        return jsonify({"message": "Student not found"}), 404
+@roles_accepted('student')
+def apply_to_drive(drive_id):
+    drive = PlacementDrive.query.get(drive_id)
+    if not drive:
+        return jsonify({"message": "Placement Drive not found"}), 404
+        
+    student_id = current_user.student_profile.id
+    existing_app = Application.query.filter_by(student_id=student_id, drive_id=drive_id).first()
+    if existing_app:
+        return jsonify({"message": "Already applied to this drive"}), 400
+        
+    new_app = Application(
+        student_id=student_id,
+        drive_id=drive_id,
+        date=date.today(),
+        status='applied'
+    )
+    db.session.add(new_app)
+    db.session.commit()
+    return jsonify({"message": "Successfully applied to drive", "application_id": new_app.id}), 200
     
+    
+@app.route('/api/application/<int:app_id>', methods=['GET', 'POST', 'DELETE'])
+@auth_required()
+@roles_accepted('admin', 'company', 'student')
+def manage_application(app_id):
+    application = Application.query.get(app_id)
+    if not application:
+        return jsonify({"message": "Application not found"}), 404
+
     if request.method == 'GET':
-        student_data = student.to_dict()
-        student_data['dob'] = student.dob.isoformat() if student.dob else None 
-        student_data['blocked'] = not student.user_account.active
-        return jsonify({"student": student_data})
-    
+        app_dict = application.to_dict()
+        app_dict['student_details'] = application.student.to_dict()
+        app_dict['drive_details'] = application.placement_drive.to_dict()
+        return jsonify({"application": app_dict})
+
     elif request.method == 'POST':
+
         data = request.get_json()
-        dob = date.fromisoformat(data.get('dob')) if data.get('dob') else None
-
-        if data.get('block') is not None:
-            block = data.get('block')
-            if block:
-                student.user_account.active = 0
-                db.session.commit()
-                return jsonify({"message": "Student account blocked"})
+        if 'status' in data:
+            application.status = data['status']
+        if 'interview_date' in data:
+            val = data['interview_date']
+            if val:
+                from datetime import datetime
+                if 'T' in val:
+                    val = val.split('T')[0]
+                if ' ' in val:
+                    val = val.split(' ')[0]
+                try:
+                    application.interview_date = date.fromisoformat(val)
+                except ValueError:
+                    return jsonify({"message": "Invalid date format"}), 400
             else:
-                student.user_account.active = 1
-                db.session.commit()
-                return jsonify({"message": "Student account unblocked"})
-        else:
-            for key, value in data.items():
-                if key == 'dob':
-                    setattr(student, key, dob)
-                else:
-                    setattr(student, key, value)
-            db.session.commit()
-            return jsonify({"message": "Student profile updated"})
-
-    elif request.method == 'DELETE' and (current_user.has_role('admin') or current_user.has_role('company')):
-        user = User.query.get(student.user_id)
-        db.session.delete(student)
-        db.session.delete(user)
+                application.interview_date = None
         db.session.commit()
-        return jsonify({"message": "Student profile deleted"})
+        return jsonify({
+            "message": "Application updated",
+            "status": application.status,
+            "interview_date": application.interview_date.isoformat() if application.interview_date else None
+        })
+        return jsonify({"message": "No status provided"}), 400
+
+    elif request.method == 'DELETE' and current_user.has_role('admin'):
+        db.session.delete(application)
+        db.session.commit()
+        return jsonify({"message": "Application deleted successfully"})

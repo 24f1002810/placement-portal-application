@@ -17,6 +17,8 @@ const getters = {
   getUserRole: (state) => state.user?.role,
   getUserId: (state) => state.user?.id,
   getUserEmail: (state) => state.user?.email,
+  getCompanyId: (state) => state.user?.companyId,
+  getStudentId: (state) => state.user?.studentId,
   isLoading: (state) => state.loading,
   getError: (state) => state.error
 };
@@ -65,42 +67,38 @@ const actions = {
     commit('SET_ERROR', null);
     try {
       console.log("Attempting login with email:", credentials.email);
-      
-      // Call backend login endpoint
+
       const loginResponse = await api.post('/login?include_auth_token=true', {
         email: credentials.email,
         password: credentials.password,
       });
 
       console.log("Login response:", loginResponse.data);
-      
+
       const token = loginResponse.data.response.user.authentication_token;
       console.log("Token received:", token);
 
-      // Save token first
       commit('SET_TOKEN', token);
 
-      // Fetch user roles and profile from dashboard endpoint
       const dashboardResponse = await api.post('/api/dashboard');
       console.log("Dashboard response:", dashboardResponse.data);
-      
-      const roles = dashboardResponse.data.profile.roles || [];
+
       const userId = dashboardResponse.data.profile.id || dashboardResponse.data.profile.user_id;
       const userName = dashboardResponse.data.profile.name || dashboardResponse.data.profile.email;
       const userEmail = dashboardResponse.data.profile.email;
+      const companyId = dashboardResponse.data.profile.company_id || null;
+      const studentId = dashboardResponse.data.profile.student_id || null;
+      const approvalStatus = dashboardResponse.data.profile.approval_status || null;
+      const role = dashboardResponse.data.profile.role || 'student';
 
-      console.log("User roles:", roles);
-
-      // Determine primary role
-      const role = roles.includes('admin') ? 'admin' : roles[0] || 'student';
-
-      // Create user object
       const user = {
         id: userId,
+        companyId: companyId,
+        studentId: studentId,
         name: userName,
         email: userEmail,
         role: role,
-        roles: roles
+        approval_status: approvalStatus
       };
 
       commit('SET_USER', user);
@@ -110,11 +108,11 @@ const actions = {
     } catch (error) {
       console.error("Full error object:", error);
       console.error("Error response data:", error.response?.data);
-      
-      const errorMessage = error.response?.data?.response?.message || 
-                          error.response?.data?.message || 
-                          error.message ||
-                          'Login failed';
+
+      const errorMessage = error.response?.data?.response?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        'Login failed';
       commit('SET_ERROR', errorMessage);
       throw error;
     } finally {
@@ -128,10 +126,10 @@ const actions = {
     try {
       const response = await api.post('/register', userData);
       const { user, token } = response.data;
-      
+
       commit('SET_USER', user);
       commit('SET_TOKEN', token);
-      
+
       return { success: true, user };
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Registration failed';
@@ -148,10 +146,10 @@ const actions = {
     try {
       const response = await api.get('/api/user/profile');
       const user = response.data.user;
-      
+
       commit('SET_USER', user);
       commit('SET_IS_ADMIN', user.role === 'admin');
-      
+
       return user;
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to fetch user profile';
@@ -183,7 +181,7 @@ const actions = {
   initializeAuth({ commit }) {
     const token = localStorage.getItem('auth_token');
     const user = localStorage.getItem('user');
-    
+
     if (token && user) {
       try {
         const parsedUser = JSON.parse(user);
@@ -199,16 +197,14 @@ const actions = {
   },
 
   validateToken({ commit }) {
-    // This would check if the token is still valid on the backend
-    // For now, we can validate basic structure
     const token = localStorage.getItem('auth_token');
     const user = localStorage.getItem('user');
-    
+
     if (!token || !user) {
       commit('CLEAR_USER');
       return false;
     }
-    
+
     try {
       JSON.parse(user);
       return true;

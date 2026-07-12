@@ -1,5 +1,5 @@
 from flask import current_app as app, request, jsonify
-from flask_security import auth_required, current_user, roles_required, roles_accepted
+from flask_security import auth_required, roles_required, roles_accepted
 from models import *
 
 @app.route('/api/admin', methods=['POST'])
@@ -29,11 +29,15 @@ def handle_registration_requests():
         if action == 'approve':
             company.approval_status = 'approved'
             db.session.commit()
-            return jsonify({"message": "Company approved"})
+            return jsonify({"message": "Company approved", "status": company.approval_status})
         elif action == 'reject':
-            db.session.delete(company)
+            company.approval_status = 'rejected'
             db.session.commit()
-            return jsonify({"message": "Company rejected"})
+            return jsonify({"message": "Company rejected", "status": company.approval_status})
+        elif action == 'cancel' or action == 'pending':
+            company.approval_status = 'pending'
+            db.session.commit()
+            return jsonify({"message": "Company approval status updated to pending", "status": company.approval_status})
         else:
             return jsonify({"message": "Invalid action"}), 400
         
@@ -57,11 +61,11 @@ def handle_drive_requests():
         if action == 'approve':
             drive.status = 'approved'
             db.session.commit()
-            return jsonify({"message": "Placement Drive approved"})
+            return jsonify({"message": "Placement Drive approved", "status": drive.status})
         elif action == 'reject':
             db.session.delete(drive)
             db.session.commit()
-            return jsonify({"message": "Placement Drive rejected"})
+            return jsonify({"message": "Placement Drive rejected", "status": drive.status})
         else:
             return jsonify({"message": "Invalid action"}), 400
 
@@ -103,3 +107,23 @@ def get_all_drives():
         })
     except Exception as e:
         return jsonify({"message": f"Error fetching placement drives: {str(e)}"}), 500
+
+@app.route('/api/admin/applications', methods=['GET'])
+@auth_required()
+@roles_required('admin')
+def get_all_applications():
+    try:
+        applications = Application.query.all()
+        result = []
+        for app_instance in applications:
+            app_dict = app_instance.to_dict()
+            app_dict['student_name'] = app_instance.student.name if app_instance.student else 'Unknown'
+            app_dict['job_title'] = app_instance.placement_drive.job_title if app_instance.placement_drive else 'Unknown'
+            app_dict['company_name'] = app_instance.placement_drive.company.name if app_instance.placement_drive and app_instance.placement_drive.company else 'Unknown'
+            result.append(app_dict)
+        return jsonify({
+            "applications": result,
+            "total": len(result)
+        })
+    except Exception as e:
+        return jsonify({"message": f"Error fetching applications: {str(e)}"}), 500

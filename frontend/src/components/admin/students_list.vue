@@ -71,7 +71,7 @@ const getSortIcon = (field) => {
 };
 
 const viewStudentDetails = (studentId) => {
-  router.push(`/student/${studentId}`);
+  router.push({ name: "ApplicantProfile", params: { id: studentId } });
 };
 
 const getCGPABadgeClass = (cgpa) => {
@@ -102,7 +102,7 @@ const isStudentActive = (student) => {
 
 function editStudent(id) {
   if (id) {
-    router.push({ name: "EditStudent", params: { id: id } });
+    router.push({ name: "AdminEditStudent", params: { id: id } });
   }
 }
 
@@ -142,7 +142,6 @@ function updateBlockStatus(s_id ,is_blocked) {
 
 <template>
   <div class="container-fluid mt-5 mb-5">
-    <!-- Header Section -->
     <div class="row mb-4">
       <div class="col">
         <h1 class="display-5">Registered Students</h1>
@@ -155,7 +154,6 @@ function updateBlockStatus(s_id ,is_blocked) {
       </div>
     </div>
 
-    <!-- Error Alert -->
     <div v-if="error" class="alert alert-danger alert-dismissible fade show" role="alert">
       {{ error }}
       <button
@@ -166,7 +164,6 @@ function updateBlockStatus(s_id ,is_blocked) {
       ></button>
     </div>
 
-    <!-- Search and Filters -->
     <div class="card mb-4">
       <div class="card-body">
         <div class="row g-3">
@@ -195,7 +192,6 @@ function updateBlockStatus(s_id ,is_blocked) {
       </div>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
@@ -203,7 +199,6 @@ function updateBlockStatus(s_id ,is_blocked) {
       <p class="mt-3 text-muted">Loading students...</p>
     </div>
 
-    <!-- Students Table -->
     <div v-else-if="filteredAndSortedStudents().length > 0" class="card">
       <div class="table-responsive">
         <table class="table table-hover mb-0">

@@ -2,12 +2,39 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "@/services/api";
+import { useStore } from "vuex";
 
 const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
 const error = ref("");
 const company = ref(null);
+const store = useStore();
+
+const role = store.getters['user/getUserRole'];
+const updatingApproval = ref(false);
+
+async function toggleApproval(action) {
+  if (!company.value) return;
+  const confirmMsg = `Are you sure you want to ${action} ${company.value.name}?`;
+
+  if (confirm(confirmMsg)) {
+    updatingApproval.value = true;
+    try {
+      const response = await api.post("/api/registration-requests", {
+        company_id: company.value.id,
+        action: action,
+      });
+      company.value.approval_status = response.data.status;
+      alert(response.data.message || "Approval status updated successfully.");
+    } catch (err) {
+      console.error("Error updating approval status:", err);
+      alert(err.response?.data?.message || "Failed to update approval status.");
+    } finally {
+      updatingApproval.value = false;
+    }
+  }
+}
 
 onMounted(async () => {
   try {
@@ -24,7 +51,6 @@ onMounted(async () => {
 
 function viewPlacementDrives() {
   if (company.value && company.value.id) {
-    // Navigate using Vue Router instead of window.location.href
     router.push({
       name: "CompanyDriveList",
       params: { id: company.value.id },
@@ -56,7 +82,7 @@ function Edit_company() {
 
 <template>
   <div class="container mt-5">
-    <router-view v-if="$route.name === 'EditCompany'" />
+    <router-view v-if="$route.name === 'EditCompany' || $route.name === 'AdminEditCompany'" />
 
     <template v-else>
       <div v-if="loading" class="text-center">
@@ -81,7 +107,6 @@ function Edit_company() {
 
       <div v-else-if="company" class="row">
         <div class="col-md-8">
-          <!-- Company Header Card -->
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               <h2 class="mb-0">{{ company.name }}</h2>
@@ -113,7 +138,6 @@ function Edit_company() {
             </div>
           </div>
 
-          <!-- Basic Information Card -->
           <div class="card mb-4">
             <div class="card-header bg-secondary text-white">
               <h5 class="mb-0">Basic Information</h5>
@@ -153,7 +177,6 @@ function Edit_company() {
             </div>
           </div>
 
-          <!-- Contact Information Card -->
           <div class="card mb-4">
             <div class="card-header bg-secondary text-white">
               <h5 class="mb-0">Contact Information</h5>
@@ -187,50 +210,8 @@ function Edit_company() {
               </div>
             </div>
           </div>
-
-          <!-- Additional Information Card -->
-          <div class="card mb-4">
-            <div class="card-header bg-secondary text-white">
-              <h5 class="mb-0">Additional Information</h5>
-            </div>
-            <div class="card-body">
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <h6 class="text-muted">Company Size</h6>
-                  <p class="fs-6">{{ company.company_size || "N/A" }}</p>
-                </div>
-                <div class="col-md-6">
-                  <h6 class="text-muted">Founded Year</h6>
-                  <p class="fs-6">{{ company.founded_year || "N/A" }}</p>
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <h6 class="text-muted">Registration Date</h6>
-                  <p class="fs-6">
-                    {{
-                      company.created_at
-                        ? new Date(company.created_at).toLocaleDateString()
-                        : "N/A"
-                    }}
-                  </p>
-                </div>
-                <div class="col-md-6">
-                  <h6 class="text-muted">Last Updated</h6>
-                  <p class="fs-6">
-                    {{
-                      company.updated_at
-                        ? new Date(company.updated_at).toLocaleDateString()
-                        : "N/A"
-                    }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        <!-- Sidebar -->
         <div class="col-md-4">
           <div class="card sticky-top">
             <div class="card-header bg-info text-white">
@@ -238,18 +219,19 @@ function Edit_company() {
             </div>
             <div class="card-body">
               <button class="btn btn-primary w-100 mb-2" @click="Edit_company">
-                Edit Company
+               <div v-if="role == 'admin'">Edit Company</div>
+               <div v-if="role == 'company'">Edit Profile</div> 
               </button>
               <button class="btn btn-warning w-100 mb-2" @click="viewPlacementDrives">
                 View Placement Drives
               </button>
               <button class="btn btn-danger w-100" @click="deleteCompany">
-                Delete Company
+                <div v-if="role == 'admin'">Delete Company</div>
+                <div v-if="role == 'company'">Delete Profile</div>
               </button>
             </div>
           </div>
 
-          <!-- Status Card -->
           <div class="card mt-3">
             <div class="card-header bg-light">
               <h6 class="mb-0">Status Summary</h6>
@@ -270,6 +252,30 @@ function Edit_company() {
                   >
                     {{ company.approval_status?.toUpperCase() }}
                   </span>
+                  <div v-if="role === 'admin'" class="d-grid gap-2 mt-2 pt-2 border-top">
+                    <button
+                      v-if="company.approval_status === 'approved'"
+                      class="btn btn-sm btn-outline-danger"
+                      @click="toggleApproval('cancel')"
+                      :disabled="updatingApproval"
+                    >
+                      Cancel Approval
+                    </button>
+                    <div v-else>
+                      <button
+                        class="btn btn-sm btn-success mb-2"
+                        @click="toggleApproval('approve')"
+                        :disabled="updatingApproval"
+                      >
+                        Approve Company
+                      </button>
+                      <button class="btn btn-sm btn-danger mb-2"
+                       @click="toggleApproval('reject')"
+                       :disabled="updatingApproval">
+                        Reject Company
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

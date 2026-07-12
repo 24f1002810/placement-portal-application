@@ -11,35 +11,32 @@ const loading = ref(true);
 const error = ref("");
 const drive = ref(null);
 
-const userRoles = computed(() => store.getters["user/getUser"]?.roles || []);
-const isAdmin = computed(() => store.getters["user/isAdmin"]);
-const isCompany = computed(() => userRoles.value.includes("company"));
+const userRole = computed(() => store.getters['user/getUserRole']);
+const isAdmin = computed(() => userRole.value === 'admin');
+const isCompany = computed(() => userRole.value === 'company');
+const isStudent = computed(() => userRole.value === 'student');
 const canEditDrive = computed(() => isAdmin.value || isCompany.value);
 
-const approveRequest = (requestId) => {
-  // Implement API call to approve the registration request
-  console.log("Approving request ID:", requestId);
-  loading.value = true;
-  error.value = "";
-  api
-    .post(`/api/drive-requests`, { drive_id: requestId, action: "approve" })
-    .then((response) => {
-      // Capture the success message from the API response
-      message.value = response.data.message || "Request approved successfully";
-      // Refresh the list of registration requests after approval
-      return api.get("/api/drive-requests");
-    })
-    .then((response) => {
-      drives.value = response.data.pending_drives;
-    })
-    .catch((err) => {
-      error.value = err.response?.data?.message || "Failed to approve request";
-      message.value = "";
-      console.error("Approval error:", err);
-    })
-    .finally(() => {
+const studentId = computed(() => store.getters['user/getStudentId']);
+
+const updateDriveStatus = async (driveId, status) => {
+  if (confirm(`Are you sure you want to change the status to ${status}?`)) {
+    loading.value = true;
+    try {
+      const response = await api.post(`api/placement-drive/${driveId}`, { status: status });
+      drive.value.status = status;
+      if (status === 'rejected') {
+        router.push({ name: "DriveList" });
+      } else {
+        alert(response.data.message || `Drive status updated to ${status}`);
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to update drive status`;
+      console.error(`Error updating drive status:`, err);
+    } finally {
       loading.value = false;
-    });
+    }
+  }
 };
 
 onMounted(async () => {
@@ -76,27 +73,21 @@ const getStatusBadgeClass = (status) => {
   }
 };
 
-function deleteDrive() {
-  if (confirm("Are you sure you want to delete this drive?")) {
-    // Call API to delete the drive
-    api
-      .delete(`api/placement-drive/${drive.value.id}`)
-      .then((response) => {
-        alert(response.data.message || "Drive deleted successfully.");
-        // Redirect or update the UI as needed
-        router.push({ name: "DriveList" }); // Assuming you have a route named 'AdminPlacementDrives'
-      })
-      .catch((err) => {
-        console.error("Error deleting drive:", err);
-        alert("Failed to delete the drive.");
-      });
-  }
-}
-
 const editDrive = (driveId) => {
   router.push(`/placement-drive/${driveId}/edit`);
 }
 
+async function applyToDrive(driveId) {
+  if (confirm("Are you sure you want to apply for this drive?")){
+    const res= await api.post(`/api/placement-drive/${driveId}/apply`);
+    if(res.status === 200){
+      alert("Applied successfully");
+      router.back();
+    }else{
+      alert("Failed to apply");
+    }
+  }
+}
 </script>
 
 <template>
@@ -119,6 +110,11 @@ const editDrive = (driveId) => {
         data-bs-dismiss="alert"
         aria-label="Close"
       ></button>
+    </div>
+
+    <div v-if="isStudent && drive?.has_applied" class="alert alert-success mt-3" role="alert">
+      You have successfully applied for this placement drive. 
+      <router-link :to="`/application/${drive.application_id}`" class="alert-link">View Application</router-link>
     </div>
 
     <div v-else-if="drive" class="row">
@@ -240,29 +236,48 @@ const editDrive = (driveId) => {
             <button class="btn btn-outline-primary" v-if="canEditDrive" @click="editDrive(drive.id)">
               Edit Drive
             </button>
-            <button class="btn btn-outline-info">
-              View Applicants
+            
+            <button v-if="drive.status === 'approved'"  class="btn btn-outline-info">
+              <router-link :to="`/applications?drive_id=${drive.id}`">
+                View Applicants
+              </router-link>
             </button>
+            
             <button
-              v-if="drive.status !== 'approved'"
+              v-if="drive.status !== 'approved' && isAdmin"
               class="btn btn-outline-success"
-              @click="approveRequest(drive.id)"
+              @click="updateDriveStatus(drive.id, 'approved')"
             >
               Approve Drive
             </button>
             <button
-              v-if="canEditDrive"
+              v-if="canEditDrive && isAdmin"
               class="btn btn-outline-danger"
-              @click="deleteDrive"
+              @click="updateDriveStatus(drive.id, 'rejected')"
             >
-              Delete Drive
+              Reject Drive
+            </button>
+            <button class="btn btn-outline-danger" v-if="canEditDrive && drive.status == 'approved' && isCompany"
+            @click="updateDriveStatus(drive.id, 'closed')">
+              End Drive
             </button>
             <router-link
               :to="`/company/${drive.company_id}`"
               class="btn btn-outline-info mt-3 w-100"
               v-if="!isCompany"
-              >View Company Details</router-link
-            >
+              >View Company Details
+            </router-link>
+            <button v-if="isStudent && !drive.has_applied && drive.status === 'approved'" 
+                    class="btn btn-outline-success mt-3 w-100" 
+                    @click="applyToDrive(drive.id)">
+              Apply
+            </button>
+            <router-link v-if="isStudent && drive.has_applied" 
+                         :to="`/application/${drive.application_id}`" 
+                         class="btn btn-outline-primary mt-3 w-100">
+              View Your Application
+            </router-link>
+            
           </div>
         </div>
       </div>

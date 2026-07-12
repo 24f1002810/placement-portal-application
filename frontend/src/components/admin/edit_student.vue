@@ -77,9 +77,6 @@ async function submitForm() {
   }
 }
 
-function goBack() {
-  router.push({ name: "StudentProfile", params: { id: studentId } });
-}
 </script>
 
 <template>
@@ -94,7 +91,7 @@ function goBack() {
               <h4 class="mb-0">Edit Student Details</h4>
               <small class="text-light">Update academic and personal information</small>
             </div>
-            <button class="btn btn-light btn-sm" @click="goBack">Back</button>
+            <button class="btn btn-light btn-sm" @click="router.back()">Back</button>
           </div>
 
           <div class="card-body">
@@ -188,7 +185,7 @@ function goBack() {
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4">
-                  <button type="button" class="btn btn-outline-secondary" @click="goBack">
+                  <button type="button" class="btn btn-outline-secondary" @click="router.back()">
                     Cancel
                   </button>
                   <button type="submit" class="btn btn-primary" :disabled="saving">

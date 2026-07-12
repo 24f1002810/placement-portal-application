@@ -1,28 +1,31 @@
 import Register from '@/components/Register.vue'
 import Home from '../components/Home.vue'
 import Login from '../components/Login.vue'
-import navbar from '@/components/navbar.vue'
 import Admin from '@/components/admin_dashboard.vue'
 import AdminHome from '@/components/admin/admin_home.vue'
 import RegistrationRequests from '@/components/admin/registration_requests.vue'
 import DriveRequests from '@/components/admin/drive_request.vue'
-import CompanyDetails from '@/components/company_details.vue'
+import CompanyDetails from '@/components/company/company_details.vue'
 import DriveDetails from '@/components/drive_details.vue'
-import StudentProfile from '@/components/student_details.vue'
+import StudentProfile from '@/components/student/student_details.vue'
 import EditStudent from '@/components/admin/edit_student.vue'
 import StudentList from '@/components/admin/students_list.vue'
 import CompanyList from '@/components/admin/company_list.vue'
 import DriveList from '@/components/admin/drive_list.vue'
 import EditCompany from '@/components/admin/edit_company.vue'
-import {createRouter, createWebHistory} from 'vue-router'
+import ApplicationsList from '@/components/applications.vue'
+import ApplicationDetail from '@/components/application_detail.vue'
+import { createRouter, createWebHistory } from 'vue-router'
 import store from '@/store/index'
 
 const routes = [
-    {path: '/',
+    {
+        path: '/',
         name: 'Home',
         component: Home
     },
-    {path: '/login',
+    {
+        path: '/login',
         name: 'Login',
         component: Login
     },
@@ -30,12 +33,6 @@ const routes = [
         path: '/register',
         name: 'Register',
         component: Register
-    },
-    {
-        path: '/dashboard',
-        name: 'Dashboard',
-        component: navbar,
-        meta: { requiresAuth: true }
     },
     {
         path: '/admin',
@@ -64,29 +61,74 @@ const routes = [
                 component: StudentList,
             },
             {
+                path: 'students/:id',
+                name: 'ApplicantProfile',
+                component: StudentProfile,
+                children: [
+                    {
+                        path: 'edit',
+                        name: 'AdminEditStudent',
+                        component: EditStudent
+                    }
+                ]
+            },
+            {
                 path: 'companies',
                 name: 'CompanyList',
                 component: CompanyList,
             },
             {
+                path: 'companies/:id',
+                name: 'CompanyProfile',
+                component: CompanyDetails,
+                children: [
+                    {
+                        path: 'edit',
+                        name: 'AdminEditCompany',
+                        component: EditCompany
+                    }
+                ]
+            },
+            {
                 path: 'placement-drives',
                 name: 'DriveList',
-                component: DriveList   
+                component: DriveList
             },
             {
                 path: 'search',
                 name: 'AdminSearch',
                 component: () => import('@/components/admin/admin_search.vue')
+            },
+            {
+                path: 'applications',
+                name: 'AdminApplications',
+                component: ApplicationsList
             }
         ]
     },
     {
-        path: '/company',
+        path: '/company/:id',
         name: 'CompanyDashboard',
-        component: navbar,
+        component: () => import('@/components/company_dashboard.vue'),
+        meta: { requiresAuth: true },
         children: [
             {
-                path: ':id',
+                path: '',
+                name: 'CompanyHome',
+                component: () => import('@/components/company/company_home.vue')
+            },
+            {
+                path: 'create-drive',
+                name: 'CreateDrive',
+                component: () => import('@/components/company/create_drive.vue')
+            },
+            {
+                path: 'applications',
+                name: 'CompanyApplications',
+                component: () => import('@/components/applications.vue')
+            },
+            {
+                path: 'profile',
                 name: 'CompanyDetails',
                 component: CompanyDetails,
                 children: [
@@ -101,6 +143,11 @@ const routes = [
                 path: 'placement-drives',
                 name: 'CompanyDriveList',
                 component: DriveList
+            },
+            {
+                path: 'search',
+                name: 'CompanySearch',
+                component: () => import('@/components/company/company_search.vue')
             }
         ]
     },
@@ -116,19 +163,54 @@ const routes = [
     },
     {
         path: '/student/:id',
-        name: 'StudentProfile',
-        component: StudentProfile
+        name: 'StudentDashboard',
+        component: () => import('@/components/student_dashboard.vue'),
+        children: [
+            {
+                path: '',
+                name: 'StudentHome',
+                component: () => import('@/components/student/student_home.vue')
+            },
+            {
+                path: 'profile',
+                name: 'StudentDetails',
+                component: StudentProfile,
+                children: [
+                    {
+                        path: 'edit',
+                        name: 'EditStudent',
+                        component: EditStudent
+                    }
+                ]
+            },
+            {
+                path: 'applications',
+                name: 'StudentApplications',
+                component: () => import('@/components/student/application_history.vue')
+            },
+            {
+                path: 'search',
+                name: 'StudentSearch',
+                component: () => import('@/components/student/student_search.vue')
+            },
+            {
+                path: 'placement-drives',
+                name: 'StudentDriveList',
+                component: () => import('@/components/student/student_drives.vue')
+            },
+        ]
+
     },
     {
-        path: '/student/:id/edit',
-        name: 'EditStudent',
-        component: EditStudent
+        path: '/application/:id',
+        name: 'ApplicationDetail',
+        component: ApplicationDetail
     }
 ]
 
 
 
-const router = createRouter({routes, history: createWebHistory()})
+const router = createRouter({ routes, history: createWebHistory() })
 
 // Route guards
 router.beforeEach((to, from) => {
@@ -152,9 +234,18 @@ router.beforeEach((to, from) => {
 
     // Redirect authenticated users with valid user data away from login/register
     if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated && user) {
-        const redirect = isAdmin ? 'AdminHome' : 'Dashboard';
-        console.log(`[Router Guard] Authenticated user on ${to.name}, redirecting to ${redirect}`);
-        return { name: redirect };
+        let redirectRoute;
+
+        if (user.role === 'admin') {
+            redirectRoute = { name: 'AdminHome' };
+        } else if (user.role === 'company') {
+            redirectRoute = { path: `/company/${user.companyId || user.id}` };
+        } else {
+            redirectRoute = { name: 'Dashboard' };
+        }
+
+        console.log(`[Router Guard] Authenticated user on ${to.name}, redirecting to`, redirectRoute);
+        return redirectRoute;
     }
 });
 

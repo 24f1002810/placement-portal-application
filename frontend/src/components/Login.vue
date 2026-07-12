@@ -16,7 +16,6 @@ const handleLogin = async () => {
   errorMessage.value = "";
 
   try {
-    // Use Vuex action to login
     const user = await store.dispatch("user/login", {
       email: email.value,
       password: password.value,
@@ -27,19 +26,46 @@ const handleLogin = async () => {
     console.log("Store isAdmin:", store.getters["user/isAdmin"]);
     console.log("Store user:", store.getters["user/getUser"]);
 
-    // Navigate based on role
     if (user.role === "admin") {
       console.log("Redirecting to AdminHome");
       router.push({ name: "AdminHome" });
-    } else if (user.role === "company") {
-      console.log("Redirecting to company Dashboard");
-      router.push({ name: "CompanyDashboard" });
+    } 
+    else if (user.role === "company") {
+      if (user.approval_status === "approved") {
+        console.log("Redirecting to company Dashboard");
+        router.push(`/company/${user.companyId}`);
+      }
+      else {
+        errorMessage.value = "Your company account is not approved yet.";
+      }
+    }
+    else if(user.role === "student"){
+      console.log("Redirecting to StudentDashboard");
+      router.push(`/student/${user.studentId}`);
+    }
+    else{
+      errorMessage.value = "You are not authorized to login.";
     }
   } catch (error) {
+    const responseData = error.response?.data?.response;
+    
+    let specificError = "";
+    if (responseData?.errors && responseData.errors.length > 0) {
+      specificError = responseData.errors[0];
+    } 
+    else if (responseData?.field_errors) {
+      const fields = Object.values(responseData.field_errors);
+      if (fields.length > 0 && fields[0].length > 0) {
+        specificError = fields[0][0];
+      }
+    }
+    
     errorMessage.value =
+      specificError ||
       error.response?.data?.response?.message ||
       error.response?.data?.message ||
       "Invalid email or password.";
+      
     console.error("Login failed:", error);
   } finally {
     isLoading.value = false;

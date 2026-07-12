@@ -6,7 +6,6 @@ import { useRouter } from "vue-router";
 const store = useStore();
 const router = useRouter();
 
-// If not authenticated, redirect to login
 if (!store.getters["user/isAuthenticated"]) {
   router.push({ name: "Login" });
 }
@@ -41,26 +40,45 @@ const handleSearch = () => {
         <span class="navbar-brand">Admin Dashboard</span>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <ul class="nav nav-underline nav-justify">
-              <li class="nav-item">
-                <router-link class="nav-link" to="/admin"><b>Dashboard</b></router-link>
-              </li>
-              <li class="nav-item">
-                <router-link class="nav-link" to="/admin/students"
-                  >Student List</router-link
-                >
-              </li>
-              <li class="nav-item">
-                <router-link class="nav-link" to="/admin/companies"
-                  >Company List</router-link
-                >
-              </li>
-              <li class="nav-item">
-                <router-link class="nav-link" to="/admin/placement-drives"
-                  >Placement Drives</router-link
-                >
-              </li>
-            </ul>
+            <li class="nav-item">
+              <router-link class="nav-link" to="/admin"><b>Dashboard</b></router-link>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Manage
+              </a>
+              <ul class="dropdown-menu">
+                <li>
+                  <router-link class="dropdown-item" to="/admin/students"
+                    >Student List</router-link
+                  >
+                </li>
+                <li>
+                  <router-link class="dropdown-item" to="/admin/companies"
+                    >Company List</router-link
+                  >
+                </li>
+                <li>
+                  <router-link class="dropdown-item" to="/admin/placement-drives"
+                    >Placement Drives</router-link
+                  >
+                </li>
+                <li>
+                  <hr class="dropdown-divider" />
+                </li>
+                <li>
+                  <router-link class="dropdown-item" to="/admin/applications"
+                    >Applications</router-link
+                  >
+                </li>
+              </ul>
+            </li>
           </ul>
           <form class="d-flex" role="search" @submit.prevent="handleSearch">
             <select v-model="searchType" class="form-select me-2" style="width: auto;">
