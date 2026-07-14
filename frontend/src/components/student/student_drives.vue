@@ -1,11 +1,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import {useRoute, useRouter} from 'vue-router';
 import api from '@/services/api';
 
 const drives = ref([]);
 const searchQuery = ref('');
 const loading = ref(true);
 const error = ref('');
+const route = useRoute();
+const studentId = route.params.id;
 
 onMounted(async () => {
     try {
@@ -38,7 +41,6 @@ const formatDate = (dateString) => {
     <div class="container mt-4 mb-5">
         <h2 class="mb-4 fw-bold text-dark">Active Placement Drives</h2>
         
-        <!-- Search Bar -->
         <div class="row mb-4">
             <div class="col-md-8 col-lg-6">
                 <div class="input-group shadow-sm search-group">
@@ -55,7 +57,6 @@ const formatDate = (dateString) => {
             </div>
         </div>
 
-        <!-- Loading State -->
         <div v-if="loading" class="text-center my-5 py-5">
             <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Loading...</span>
@@ -63,17 +64,14 @@ const formatDate = (dateString) => {
             <h5 class="mt-3 text-muted">Discovering Opportunities...</h5>
         </div>
 
-        <!-- Error State -->
         <div v-else-if="error" class="alert alert-danger shadow-sm border-0 rounded-3">
             <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
         </div>
 
-        <!-- Empty State -->
         <div v-else-if="filteredDrives.length === 0" class="alert alert-info shadow-sm border-0 rounded-3">
             <i class="bi bi-info-circle-fill me-2"></i> No active drives found matching your search.
         </div>
 
-        <!-- Drive Cards -->
         <div class="row" v-else>
             <div class="col-md-6 col-xl-4 mb-4" v-for="drive in filteredDrives" :key="drive.id">
                 <div class="card h-100 shadow-sm border-0 drive-card hover-elevate">

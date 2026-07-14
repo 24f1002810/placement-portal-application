@@ -2,6 +2,7 @@ from flask import current_app as app, request, jsonify
 from flask_security import auth_required, roles_accepted
 from models import *
 from datetime import date
+from cache import cache
 
 @app.route('/api/company/<int:company_id>', methods=['GET', 'POST', 'DELETE'])
 @auth_required()
@@ -43,6 +44,7 @@ def view_company_details(company_id):
 @app.route('/api/company/<int:company_id>/placement-drives', methods=['GET', 'POST'])
 @auth_required()
 @roles_accepted('admin', 'company')
+@cache.cached(timeout=180)
 def get_company_placement_drives(company_id):
     company = Company.query.get(company_id)
     if not company:
@@ -57,7 +59,6 @@ def get_company_placement_drives(company_id):
         
         job_title = data.get('job_title', '').strip()
         
-        # Check if an active drive with the same job role already exists
         existing_drive = PlacementDrive.query.filter(
             PlacementDrive.company_id == company_id,
             PlacementDrive.job_title.ilike(job_title),
@@ -81,7 +82,7 @@ def get_company_placement_drives(company_id):
             working_experience_required=data.get('working_experience_required'),
             deadline=deadline,
             salary=data.get('salary'),
-            status='pending'  # Automatically pending admin approval
+            status='pending'  
         )
         db.session.add(new_drive)
         db.session.commit()
@@ -90,15 +91,14 @@ def get_company_placement_drives(company_id):
 @app.route('/api/company/<int:company_id>/applications', methods=['GET'])
 @auth_required()
 @roles_accepted('admin', 'company')
+@cache.cached(timeout=180)
 def get_company_applications(company_id):
     company = Company.query.get(company_id)
     if not company:
         return jsonify({"message": "Company not found"}), 404
 
-    # Get all placement drives for this company
     drive_ids = [drive.id for drive in company.placement_drive]
     
-    # Get all applications for those drives
     applications = Application.query.filter(Application.drive_id.in_(drive_ids)).all()
     
     result = []

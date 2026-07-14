@@ -37,7 +37,9 @@ const handleSearch = () => {
   <div class="container">
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
       <div class="container-fluid">
-        <span class="navbar-brand">Admin Dashboard</span>
+        <span class="navbar-brand fw-bold text-primary fs-3 d-flex align-items-center gap-2">
+          <i class="bi bi-mortarboard-fill"></i> Nexus <span class="fs-6 text-muted ms-2 fw-normal">| Admin</span>
+        </span>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item">

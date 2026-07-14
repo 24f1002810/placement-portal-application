@@ -1,0 +1,16 @@
+#Install and run redis 
+
+sudo apt update
+sudo apt install redis-server
+
+# Start the service
+sudo service redis-server start
+
+#Stop service 
+sudo service redis-server stop
+
+# Starting celery worker
+celery -A workers.celery_worker.celery_app worker --pool=solo --loglevel=info
+
+# Starting celery beat
+celery -A workers.celery_worker.celery_app beat --loglevel=info

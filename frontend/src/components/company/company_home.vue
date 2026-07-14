@@ -5,12 +5,22 @@ import api from '@/services/api';
 const loading = ref(true);
 const error = ref(null);
 const drives = ref([]);
+const applications = ref([]);
 
 onMounted(async () => {
   try {
     const response = await api.post('/api/dashboard');
-    if (response.data && response.data.profile && response.data.profile.drives) {
-      drives.value = response.data.profile.drives;
+    if (response.data && response.data.profile) {
+      if (response.data.profile.drives) {
+        drives.value = response.data.profile.drives;
+      }
+      const companyId = response.data.profile.company_id;
+      if (companyId) {
+        const appsResponse = await api.get(`/api/company/${companyId}/applications`);
+        if (appsResponse.data && appsResponse.data.applications) {
+          applications.value = appsResponse.data.applications;
+        }
+      }
     }
   } catch (err) {
     error.value = err.response?.data?.message || "Failed to load dashboard data";
@@ -23,10 +33,51 @@ onMounted(async () => {
 const activeDrives = computed(() => {
   return drives.value.filter(drive => drive.status === 'approved');
 });
+
+const upcomingInterviewsThisMonth = computed(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    return applications.value.filter(app => {
+        if (!app.interview_date) return false;
+        const interviewDate = new Date(app.interview_date);
+        return interviewDate >= startOfToday && 
+               interviewDate.getMonth() === currentMonth && 
+               interviewDate.getFullYear() === currentYear;
+    }).sort((a, b) => new Date(a.interview_date) - new Date(b.interview_date));
+});
 </script>
 
 <template>
   <div class="container mt-4">
+
+    <div v-if="upcomingInterviewsThisMonth.length > 0" class="mb-5">
+      <h3 class="mb-4 fw-bold">Upcoming Interviews</h3>
+      <div class="row">
+        <div class="col-md-4 mb-4" v-for="app in upcomingInterviewsThisMonth" :key="'interview-' + app.id">
+          <div class="card h-100 shadow-sm border-0 border-start border-warning border-4">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title text-primary fw-bold">{{ app.job_title }}</h5>
+              <h6 class="card-subtitle mb-3 text-muted">Candidate: {{ app.student_name }}</h6>
+              <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                  <i class="bi bi-calendar-event me-1"></i>
+                  {{ new Date(app.interview_date).toLocaleDateString() }}
+                </span>
+                <router-link 
+                  :to="{ name: 'ApplicationDetail', params: { id: app.id }}" 
+                  class="btn btn-outline-warning text-dark btn-sm fw-semibold">
+                  View Application
+                </router-link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Active Placement Drives</h2>
       <router-link :to="{ name: 'CreateDrive' }" class="btn btn-primary">

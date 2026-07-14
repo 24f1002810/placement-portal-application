@@ -10,7 +10,6 @@ import admin, company, student
 @app.route('/logout', methods=['POST'])
 @auth_required('token')
 def logout():
-    # Invalidate the current user's session by changing the fs_uniquifier
     current_user.fs_uniquifier = uuid.uuid4().hex
     db.session.commit()
     return jsonify({"message": "Logged out successfully"}), 200

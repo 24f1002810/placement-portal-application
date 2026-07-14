@@ -119,7 +119,6 @@ async function applyToDrive(driveId) {
 
     <div v-else-if="drive" class="row">
       <div class="col-lg-8">
-        <!-- Drive Header Card -->
         <div class="card mb-4">
           <div class="card-header bg-primary text-white">
             <div class="row align-items-center">
@@ -148,7 +147,6 @@ async function applyToDrive(driveId) {
           </div>
         </div>
 
-        <!-- Job Information Card -->
         <div class="card mb-4">
           <div class="card-header bg-secondary text-white">
             <h5 class="mb-0">Job Information</h5>
@@ -165,7 +163,6 @@ async function applyToDrive(driveId) {
           </div>
         </div>
 
-        <!-- Requirements Card -->
         <div class="card mb-4">
           <div class="card-header bg-secondary text-white">
             <h5 class="mb-0">Requirements</h5>
@@ -190,7 +187,6 @@ async function applyToDrive(driveId) {
           </div>
         </div>
 
-        <!-- Compensation & Timeline Card -->
         <div class="card mb-4">
           <div class="card-header bg-secondary text-white">
             <h5 class="mb-0">Compensation & Timeline</h5>
@@ -211,7 +207,6 @@ async function applyToDrive(driveId) {
           </div>
         </div>
 
-        <!-- Applicants Card -->
         <div class="card mb-4">
           <div class="card-header bg-info text-white">
             <h5 class="mb-0">Applicants</h5>
@@ -225,9 +220,7 @@ async function applyToDrive(driveId) {
         </div>
       </div>
 
-      <!-- Sidebar -->
       <div class="col-lg-4">
-        <!-- Quick Actions Card -->
         <div class="card sticky-top mb-3">
           <div class="card-header bg-info text-white">
             <h5 class="mb-0">Quick Actions</h5>

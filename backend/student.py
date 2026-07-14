@@ -1,7 +1,10 @@
-from flask import current_app as app, request, jsonify
+from flask import current_app as app, request, jsonify, send_file
 from flask_security import auth_required, roles_accepted, roles_required, current_user
 from models import *
 from datetime import date
+from cache import cache
+import os
+from celery.result import AsyncResult
 
 @app.route('/api/student/<int:student_id>', methods=['GET', 'POST', 'DELETE'])
 @auth_required()
@@ -67,6 +70,42 @@ def student_applications(student_id):
 @app.route('/api/student/placement-drives', methods=['GET'])
 @auth_required()
 @roles_accepted('admin', 'student')
+@cache.cached(timeout=180)
 def student_placement_drives():
     drives = PlacementDrive.query.filter_by(status='approved').all()
     return jsonify({"drives": [drive.to_dict() for drive in drives]})
+
+@app.route('/api/student/<int:student_id>/export_applications', methods=['POST'])
+@auth_required()
+@roles_accepted('student')
+def export_applications(student_id):
+    if current_user.student_profile.id != student_id:
+        return jsonify({"message": "Unauthorized"}), 403
+        
+    from workers.tasks import export_student_applications
+    task = export_student_applications.delay(student_id)
+    return jsonify({"task_id": task.id}), 202
+
+@app.route('/api/task_status/<task_id>', methods=['GET'])
+@auth_required()
+@roles_accepted('student')
+def task_status(task_id):
+    from workers.celery_worker import celery_app
+    task = AsyncResult(task_id, app=celery_app)
+    if task.state == 'PENDING':
+        response = {"state": task.state, "status": "Pending..."}
+    elif task.state != 'FAILURE':
+        response = {"state": task.state, "result": task.info}
+    else:
+        response = {"state": task.state, "status": str(task.info)}
+    return jsonify(response)
+
+@app.route('/api/download/<task_id>', methods=['GET'])
+def download_file(task_id):
+    downloads_dir = os.path.join(app.instance_path, 'downloads')
+    filename = f"applications_{task_id}.csv"
+    filepath = os.path.join(downloads_dir, filename)
+    
+    if os.path.exists(filepath):
+        return send_file(filepath, as_attachment=True)
+    return jsonify({"message": "File not found"}), 404

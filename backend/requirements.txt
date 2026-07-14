@@ -2,4 +2,8 @@ flask
 flask-sqlalchemy
 flask-security-too 
 flask-cors
+flask-caching
 argon2-cffi
+redis
+celery[redis]
+requests

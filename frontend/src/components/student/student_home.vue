@@ -33,6 +33,21 @@ const notRejectedApplications = computed(() => {
     return activeApplications.value.filter(app => app.status !== 'rejected' && app.status !== 'Rejected');
 });
 
+const upcomingInterviewsThisMonth = computed(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    return activeApplications.value.filter(app => {
+        if (!app.interview_date) return false;
+        const interviewDate = new Date(app.interview_date);
+        return interviewDate >= startOfToday && 
+               interviewDate.getMonth() === currentMonth && 
+               interviewDate.getFullYear() === currentYear;
+    }).sort((a, b) => new Date(a.interview_date) - new Date(b.interview_date));
+});
+
 const getStatusBadgeClass = (status) => {
     const s = status.toLowerCase();
     if (s === 'applied') return 'badge bg-primary';
@@ -46,6 +61,33 @@ const getStatusBadgeClass = (status) => {
 
 <template>
     <div class="container mt-4">
+        
+        <div v-if="upcomingInterviewsThisMonth.length > 0" class="mb-5">
+            <h3 class="mb-4 fw-bold text-dark">Upcoming Interviews</h3>
+            <div class="row">
+                <div class="col-md-6 col-lg-4 mb-4" v-for="app in upcomingInterviewsThisMonth" :key="'interview-' + app.id">
+                    <div class="card h-100 shadow-sm border-0 border-start border-warning border-4 application-card">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="card-title text-primary mb-1 fw-bold">{{ app.company_name }}</h5>
+                                    <h6 class="card-subtitle text-muted">{{ app.job_title }}</h6>
+                                </div>
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    {{ new Date(app.interview_date).toLocaleDateString() }}
+                                </span>
+                            </div>
+                            
+                            <div class="mt-auto pt-3 border-top">
+                                <router-link :to="`/application/${app.id}`" class="btn btn-outline-warning text-dark btn-sm w-100 fw-semibold">View Details</router-link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <h2 class="mb-4 fw-bold text-dark">Active Applications</h2>
         
         <div v-if="errorMessage" class="alert alert-danger shadow-sm">

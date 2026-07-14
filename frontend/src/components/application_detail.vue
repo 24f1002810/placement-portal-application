@@ -146,7 +146,6 @@ const formatDate = (dateString) => {
         </div>
       </div>
 
-      <!-- Drive Details -->
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm h-100 border-0">
           <div class="card-header bg-secondary text-white">
@@ -173,7 +172,6 @@ const formatDate = (dateString) => {
         </div>
       </div>
 
-      <!-- Application Status and Actions -->
       <div class="col-12 mb-4">
         <div class="card shadow-sm border-0">
           <div class="card-header bg-info text-dark">

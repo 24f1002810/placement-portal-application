@@ -7,6 +7,8 @@ const store = useStore();
 const applications = ref([]);
 const loading = ref(true);
 const error = ref('');
+const isDownloading = ref(false);
+const downloadMessage = ref('');
 
 onMounted(async () => {
     try {
@@ -39,13 +41,74 @@ const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
 };
+
+const downloadHistory = async () => {
+    if (isDownloading.value) return;
+    
+    try {
+        isDownloading.value = true;
+        downloadMessage.value = 'Initiating download...';
+        
+        const studentId = store.getters['user/getStudentId'];
+        
+        const res = await api.post(`/api/student/${studentId}/export_applications`);
+        const taskId = res.data.task_id;
+        
+        const checkStatus = async () => {
+            try {
+                const statusRes = await api.get(`/api/task_status/${taskId}`);
+                if (statusRes.data.state === 'SUCCESS') {
+                    downloadMessage.value = 'Downloading file...';
+                    
+                    const fileRes = await api.get(`/api/download/${taskId}`, { responseType: 'blob' });
+                    const url = window.URL.createObjectURL(new Blob([fileRes.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', 'application_history.csv');
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    
+                    isDownloading.value = false;
+                    downloadMessage.value = '';
+                } else if (statusRes.data.state === 'FAILURE') {
+                    error.value = 'Failed to generate download. Please try again later.';
+                    isDownloading.value = false;
+                    downloadMessage.value = '';
+                } else {
+                    downloadMessage.value = 'Generating CSV...';
+                    setTimeout(checkStatus, 2000);
+                }
+            } catch (err) {
+                console.error('Error checking task status:', err);
+                error.value = 'Error generating download. Please try again.';
+                isDownloading.value = false;
+                downloadMessage.value = '';
+            }
+        };
+        
+        setTimeout(checkStatus, 1500);
+        
+    } catch (err) {
+        console.error('Error starting export task:', err);
+        error.value = 'Failed to start download. Please try again later.';
+        isDownloading.value = false;
+        downloadMessage.value = '';
+    }
+};
 </script>
 
 <template>
     <div class="container mt-4 mb-5">
-        <h2 class="mb-4 fw-bold text-dark">Application History</h2>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-dark m-0">Application History</h2>
+            <button @click="downloadHistory" :disabled="isDownloading" class="btn btn-outline-primary d-flex align-items-center gap-2 shadow-sm">
+                <span v-if="isDownloading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <i v-else class="bi bi-download"></i>
+                {{ isDownloading ? downloadMessage : 'Download History (CSV)' }}
+            </button>
+        </div>
         
-        <!-- Loading State -->
         <div v-if="loading" class="text-center my-5 py-5">
             <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Loading...</span>
@@ -53,17 +116,14 @@ const formatDate = (dateString) => {
             <h5 class="mt-3 text-muted">Retrieving history...</h5>
         </div>
 
-        <!-- Error State -->
         <div v-else-if="error" class="alert alert-danger shadow-sm border-0 rounded-3">
             <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
         </div>
 
-        <!-- Empty State -->
         <div v-else-if="pastApplications.length === 0" class="alert alert-info shadow-sm border-0 rounded-3">
             <i class="bi bi-info-circle-fill me-2"></i> You have no past applications at this time.
         </div>
 
-        <!-- Table View -->
         <div v-else class="card shadow-sm border-0 rounded-4 overflow-hidden">
             <div class="card-body p-0">
                 <div class="table-responsive">

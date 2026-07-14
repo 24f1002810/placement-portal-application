@@ -5,11 +5,8 @@ from models import db, Student, Company
 from flask_security import hash_password
 
 def setup_database():
-    # We must run database operations inside the Flask application context
     with app.app_context():
         print("Creating tables...")
-        # WARNING: If you have old tables with the previous schema, you might need 
-        # to delete your database file (e.g., app.db or your SQLite file) first.
         db.create_all()
 
         print("Setting up roles...")
@@ -35,7 +32,7 @@ def setup_database():
                 fs_uniquifier=uuid.uuid4().hex,
                 roles=['student']
             )
-            db.session.flush() # Flush to assign an ID to student_user before linking
+            db.session.flush() 
             
             student_profile = Student(
                 user_id=student_user.id,

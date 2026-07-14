@@ -5,9 +5,10 @@ class Config():
 class LocalDevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI= 'sqlite:///database.sqlite3'
-    # SECURITY_KEY = 'super-security-key'
-    # SECURITY_PASSWORD_SALT = 'super-security-salt'
-    # WTF_CSRF_CHECK_DEFAULT = False
-    # SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
-    # SECURITY_TOKEN_AUTHENTICATION_HEADER = 'Authentication-Token'
-    # JWT_SECRET_KEY = 'sreedevi-is-my-gf'
+    CELERY_BROKER_URL = 'redis://localhost:6379/1'
+    CELERY_RESULT_BACKEND = 'redis://localhost:6379/2'
+    CACHE_TYPE = "RedisCache"
+    CACHE_REDIS_URL = "redis://localhost:6379/3"
+    CACHE_DEFAULT_TIMEOUT = 180
+    WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxpIVV0-IdOl3CM7Twf-dptC2yNHTNADyJBkhlEVEL4MpEBjHUCaVnJwGvPfmeL1t3S/exec' # Replace with actual webhook url
+    

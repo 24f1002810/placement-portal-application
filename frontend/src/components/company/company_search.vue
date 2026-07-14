@@ -66,13 +66,11 @@ watch(
         <h1 class="display-6 mb-4">Search Results</h1>
         <p class="text-muted">Showing results for <strong>"{{ searchQuery }}"</strong> in <strong>{{ searchType.replace('-', ' ') }}</strong></p>
 
-        <!-- Error Alert -->
         <div v-if="error" class="alert alert-danger alert-dismissible fade show" role="alert">
             {{ error }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <!-- Loading State -->
         <div v-if="loading" class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -80,13 +78,11 @@ watch(
             <p class="mt-3 text-muted">Searching...</p>
         </div>
 
-        <!-- Empty State -->
         <div v-else-if="searchResults.length === 0" class="alert alert-info text-center py-5">
             <h5>No Results Found</h5>
             <p class="mb-0">No matches found for "{{ searchQuery }}" in {{ searchType.replace('-', ' ') }}.</p>
         </div>
 
-        <!-- Results -->
         <div v-else class="row g-4">
             <template v-if="searchType === 'applications'">
                 <div v-for="item in searchResults" :key="item.id" class="col-md-6 col-lg-4">

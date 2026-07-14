@@ -1,6 +1,7 @@
 from flask import current_app as app, request, jsonify
 from flask_security import auth_required, roles_required, roles_accepted
 from models import *
+from cache import cache
 
 @app.route('/api/admin', methods=['POST'])
 @auth_required('token')
@@ -72,6 +73,7 @@ def handle_drive_requests():
 @app.route('/api/admin/students', methods=['GET'])
 @auth_required()
 @roles_required('admin')
+@cache.cached(timeout=180)
 def get_all_students():
     try:
         students = Student.query.all()
@@ -85,6 +87,7 @@ def get_all_students():
 @app.route('/api/admin/companies', methods=['GET'])
 @auth_required()
 @roles_required('admin')
+@cache.cached(timeout=180)
 def get_all_companies():
     try:
         companies = Company.query.all()
@@ -98,6 +101,7 @@ def get_all_companies():
 @app.route('/api/admin/placement-drives', methods=['GET'])
 @auth_required()
 @roles_required('admin')
+@cache.cached(timeout=180)
 def get_all_drives():
     try:
         drives = PlacementDrive.query.all()
@@ -111,6 +115,7 @@ def get_all_drives():
 @app.route('/api/admin/applications', methods=['GET'])
 @auth_required()
 @roles_required('admin')
+@cache.cached(timeout=180)
 def get_all_applications():
     try:
         applications = Application.query.all()
