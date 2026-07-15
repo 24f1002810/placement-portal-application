@@ -119,7 +119,6 @@ const handleCompanyRegister = async () => {
           @click="registrationType = 'student'"
           :disabled="isLoading"
         >
-          <span class="fs-4 d-block mb-1">👨‍🎓</span> 
           <span class="fw-medium">Student Registration</span>
         </button>
         <button
@@ -127,7 +126,7 @@ const handleCompanyRegister = async () => {
           @click="registrationType = 'company'"
           :disabled="isLoading"
         >
-          <span class="fs-4 d-block mb-1">🏢</span> 
+ 
           <span class="fw-medium">Company Registration</span>
         </button>
       </div>
@@ -292,7 +291,7 @@ const handleCompanyRegister = async () => {
               v-model="companyForm.hrContact"
               class="form-control"
               required
-              placeholder="HR Manager name"
+              placeholder="HR Phone Number"
               :disabled="isLoading"
             />
           </div>

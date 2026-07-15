@@ -38,9 +38,13 @@ def get_student_profile(student_id):
             for key, value in data.items():
                 if key == 'dob':
                     setattr(student, key, dob)
+                elif key == 'email':
+                    student.user_account.email = value
                 else:
-                    setattr(student, key, value)
+                    if hasattr(student, key):
+                        setattr(student, key, value)
             db.session.commit()
+            cache.clear()
             return jsonify({"message": "Student profile updated"})
 
     elif request.method == 'DELETE' and (current_user.has_role('admin') or current_user.has_role('student')):
@@ -48,6 +52,7 @@ def get_student_profile(student_id):
         db.session.delete(student)
         db.session.delete(user)
         db.session.commit()
+        cache.clear()
         return jsonify({"message": "Student profile deleted"})
 
 @app.route('/api/student/<int:student_id>/applications', methods=['GET', 'DELETE'])

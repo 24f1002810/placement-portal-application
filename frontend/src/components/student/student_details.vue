@@ -1,11 +1,11 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "@/services/api";
 import { useStore } from "vuex";
 
 const store = useStore();
-const role = store.getters['user/getRole'];
+const role = computed(() => store.getters['user/getUserRole']);
 
 const route = useRoute();
 const router = useRouter();
@@ -91,6 +91,16 @@ function updateBlockStatus(id, is_blocked) {
         console.error("Error updating student block status:", err);
         alert("Failed to update student block status.");
       });
+  }
+}
+
+function viewApplications() {
+  if (student.value?.id) {
+    if (role.value === 'admin') {
+      router.push({ name: 'AdminApplications', query: { student_id: student.value.id } });
+    } else if (role.value === 'student') {
+      router.push({ name: 'StudentApplications' });
+    }
   }
 }
 </script>
@@ -233,13 +243,12 @@ function updateBlockStatus(id, is_blocked) {
             </div>
             <div class="card-body d-grid gap-2">
               <button class="btn btn-primary" @click="editStudent">Edit Profile</button>
-              <button class="btn btn-info">View Applications</button>
-              <button class="btn btn-warning">Download Resume</button>
+              <button class="btn btn-info" @click="viewApplications">View Applications</button>
               <button class="btn btn-danger" @click="deleteStudent">Delete Account</button>
-              <div v-if="role == 'admin'">
+              <template v-if="role == 'admin'">
                 <button v-if="student.blocked" @click="updateBlockStatus(student.id, false)" class="btn btn-success">Unblock</button>
                 <button v-else @click="updateBlockStatus(student.id, true)" class="btn btn-warning">Block</button>
-              </div>
+              </template>
             </div>
           </div>
         </div>

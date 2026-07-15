@@ -92,7 +92,9 @@ async function applyToDrive(driveId) {
 
 <template>
   <div class="container mt-5 mb-5">
-    <div v-if="loading" class="text-center">
+    <router-view v-if="$route.name === 'DriveApplications' || $route.name === 'DriveCompanyDetails'" />
+    <template v-else>
+      <div v-if="loading" class="text-center">
       <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
@@ -117,7 +119,7 @@ async function applyToDrive(driveId) {
       <router-link :to="`/application/${drive.application_id}`" class="alert-link">View Application</router-link>
     </div>
 
-    <div v-else-if="drive" class="row">
+    <div v-if="drive" class="row">
       <div class="col-lg-8">
         <div class="card mb-4">
           <div class="card-header bg-primary text-white">
@@ -230,11 +232,13 @@ async function applyToDrive(driveId) {
               Edit Drive
             </button>
             
-            <button v-if="drive.status === 'approved'"  class="btn btn-outline-info">
-              <router-link :to="`/applications?drive_id=${drive.id}`">
-                View Applicants
-              </router-link>
-            </button>
+            <router-link
+              v-if="canEditDrive"
+              :to="`/placement-drive/${drive.id}/applications?drive_id=${drive.id}`"
+              class="btn btn-outline-info"
+            >
+              View Applicants
+            </router-link>
             
             <button
               v-if="drive.status !== 'approved' && isAdmin"
@@ -255,19 +259,20 @@ async function applyToDrive(driveId) {
               End Drive
             </button>
             <router-link
-              :to="`/company/${drive.company_id}`"
-              class="btn btn-outline-info mt-3 w-100"
+              :to="`/placement-drive/${drive.id}/company/${drive.company_id}`"
+              class="btn btn-outline-info"
               v-if="!isCompany"
-              >View Company Details
+              >
+              View Company Details
             </router-link>
             <button v-if="isStudent && !drive.has_applied && drive.status === 'approved'" 
-                    class="btn btn-outline-success mt-3 w-100" 
+                    class="btn btn-outline-success" 
                     @click="applyToDrive(drive.id)">
               Apply
             </button>
             <router-link v-if="isStudent && drive.has_applied" 
                          :to="`/application/${drive.application_id}`" 
-                         class="btn btn-outline-primary mt-3 w-100">
+                         class="btn btn-outline-primary">
               View Your Application
             </router-link>
             
@@ -276,7 +281,8 @@ async function applyToDrive(driveId) {
       </div>
     </div>
 
-    <div v-else class="alert alert-info text-center">No drive data available</div>
+      <div v-else class="alert alert-info text-center">No drive data available</div>
+    </template>
   </div>
 </template>
 

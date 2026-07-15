@@ -6,7 +6,7 @@ from cache import cache
 
 @app.route('/api/company/<int:company_id>', methods=['GET', 'POST', 'DELETE'])
 @auth_required()
-@roles_accepted('admin', 'company')
+@roles_accepted('admin', 'company', 'student')
 def view_company_details(company_id):
     company = Company.query.get(company_id)
     if not company:
@@ -32,6 +32,7 @@ def view_company_details(company_id):
         for key, value in data.items():
             setattr(company, key, value)
         db.session.commit()
+        cache.clear()
         return jsonify({"message": "Company details updated"}), 200
     
     elif request.method == 'DELETE':
@@ -39,6 +40,7 @@ def view_company_details(company_id):
         db.session.delete(company)
         db.session.delete(user)
         db.session.commit()
+        cache.clear()
         return jsonify({"message": "Company successfully deleted"}), 200
 
 @app.route('/api/company/<int:company_id>/placement-drives', methods=['GET', 'POST'])
@@ -86,6 +88,7 @@ def get_company_placement_drives(company_id):
         )
         db.session.add(new_drive)
         db.session.commit()
+        cache.clear()
         return jsonify({"message": "Placement drive requested successfully", "drive": new_drive.to_dict()}), 201
 
 @app.route('/api/company/<int:company_id>/applications', methods=['GET'])

@@ -141,6 +141,8 @@ const formatDate = (dateString) => {
                   {{ skill }}
                 </span>
               </dd>
+              <dt class="col-sm-4">Work Experience</dt>
+              <dd class="col-sm-8">{{ application.student_details.work_experience || 'N/A' }}</dd>
             </dl>
           </div>
         </div>

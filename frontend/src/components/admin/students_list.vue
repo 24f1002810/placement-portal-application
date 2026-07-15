@@ -56,20 +56,6 @@ const filteredAndSortedStudents = () => {
   return filtered;
 };
 
-const toggleSort = (field) => {
-  if (sortBy.value === field) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortBy.value = field;
-    sortOrder.value = "asc";
-  }
-};
-
-const getSortIcon = (field) => {
-  if (sortBy.value !== field) return "↕️";
-  return sortOrder.value === "asc" ? "↑" : "↓";
-};
-
 const viewStudentDetails = (studentId) => {
   router.push({ name: "ApplicantProfile", params: { id: studentId } });
 };
@@ -85,20 +71,6 @@ const isStudentActive = (student) => {
   return student?.active ?? student?.user_account?.active ?? true;
 };
 
-// const updateStudentAccountStatus = (studentId, isActive) => {
-//   students.value = students.value.map((student) => {
-//     if (student.id !== studentId) return student;
-
-//     return {
-//       ...student,
-//       active: isActive,
-//       user_account: {
-//         ...(student.user_account || {}),
-//         active: isActive,
-//       },
-//     };
-//   });
-// };
 
 function editStudent(id) {
   if (id) {
@@ -204,18 +176,18 @@ function updateBlockStatus(s_id ,is_blocked) {
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
-              <th class="cursor-pointer" @click="toggleSort('id')">
-                ID {{ getSortIcon("id") }}
+              <th class="cursor-pointer">
+                ID
               </th>
-              <th class="cursor-pointer" @click="toggleSort('name')">
-                Name {{ getSortIcon("name") }}
+              <th class="cursor-pointer">
+                Name 
               </th>
-              <th class="cursor-pointer" @click="toggleSort('email')">
-                Email {{ getSortIcon("email") }}
+              <th class="cursor-pointer">
+                Email
               </th>
               <th>Phone</th>
-              <th class="cursor-pointer" @click="toggleSort('cgpa')">
-                CGPA {{ getSortIcon("cgpa") }}
+              <th class="cursor-pointer">
+                CGPA
               </th>
               <th class="text-center">Skills</th>
               <th class="text-center">Actions</th>

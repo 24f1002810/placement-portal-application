@@ -4,11 +4,11 @@ import {useRoute, useRouter} from 'vue-router';
 import api from '@/services/api';
 
 const drives = ref([]);
-const searchQuery = ref('');
 const loading = ref(true);
 const error = ref('');
 const route = useRoute();
 const studentId = route.params.id;
+const searchQuery = ref(route.query.search || '');
 
 onMounted(async () => {
     try {
@@ -100,7 +100,7 @@ const formatDate = (dateString) => {
                                     <span class="fw-bold text-dark">₹{{ drive.salary }}</span>
                                 </div>
                             </div>
-                            <router-link :to="`/placement-drive/${drive.id}`" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm">
+                            <router-link :to="`placement-drive/${drive.id}`" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm">
                                 View Details & Apply <i class="bi bi-arrow-right ms-1"></i>
                             </router-link>
                         </div>

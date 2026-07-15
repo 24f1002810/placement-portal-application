@@ -61,19 +61,7 @@ const filteredAndSortedCompanies = () => {
     return filtered;
 };
 
-const toggleSort = (field) => {
-    if (sortBy.value === field) {
-        sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-    } else {
-        sortBy.value = field;
-        sortOrder.value = "asc";
-    }
-};
 
-const getSortIcon = (field) => {
-    if (sortBy.value !== field) return "↕️";
-    return sortOrder.value === "asc" ? "↑" : "↓";
-};
 
 const getStatusBadgeClass = (status) => {
     if (status === 'approved') return "bg-success";
@@ -151,7 +139,6 @@ function updateBlockStatus(id, is_blocked) {
 
 <template>
     <div class="container-fluid mt-5 mb-5">
-        <!-- Header Section -->
         <div class="row mb-4">
             <div class="col">
                 <h1 class="display-5">Registered Companies</h1>
@@ -172,13 +159,11 @@ function updateBlockStatus(id, is_blocked) {
             </div>
         </div>
 
-        <!-- Error Alert -->
         <div v-if="error" class="alert alert-danger alert-dismissible fade show" role="alert">
             {{ error }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <!-- Search and Filters -->
         <div class="card mb-4">
             <div class="card-body">
                 <div class="row g-3">
@@ -215,7 +200,6 @@ function updateBlockStatus(id, is_blocked) {
             </div>
         </div>
 
-        <!-- Loading State -->
         <div v-if="loading" class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -223,26 +207,25 @@ function updateBlockStatus(id, is_blocked) {
             <p class="mt-3 text-muted">Loading companies...</p>
         </div>
 
-        <!-- Companies Table -->
         <div v-else-if="filteredAndSortedCompanies().length > 0" class="card">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="cursor-pointer" @click="toggleSort('id')">
-                                ID {{ getSortIcon('id') }}
+                            <th class="cursor-pointer">
+                                ID 
                             </th>
-                            <th class="cursor-pointer" @click="toggleSort('name')">
-                                Company Name {{ getSortIcon('name') }}
+                            <th class="cursor-pointer">
+                                Company Name 
                             </th>
-                            <th class="cursor-pointer" @click="toggleSort('industry')">
-                                Industry {{ getSortIcon('industry') }}
+                            <th class="cursor-pointer">
+                                Industry 
                             </th>
-                            <th class="cursor-pointer" @click="toggleSort('location')">
-                                Location {{ getSortIcon('location') }}
+                            <th class="cursor-pointer">
+                                Location 
                             </th>
-                            <th class="cursor-pointer" @click="toggleSort('approval_status')">
-                                Status {{ getSortIcon('approval_status') }}
+                            <th class="cursor-pointer">
+                                Status 
                             </th>
                             <th class="text-center" style="min-width: 200px;">Actions</th>
                         </tr>
@@ -330,7 +313,6 @@ function updateBlockStatus(id, is_blocked) {
             </div>
         </div>
 
-        <!-- Empty State -->
         <div v-else class="card text-center py-5">
             <div class="card-body">
                 <h5 class="card-title">No Companies Found</h5>

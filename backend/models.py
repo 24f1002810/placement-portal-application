@@ -48,6 +48,7 @@ class Student(db.Model):
             'cgpa': self.cgpa,
             'skills': [s.strip() for s in (self.skills or '').split(',') if s.strip()],
             'education': self.education,
+            'working_experience': self.working_experience,
             'active': self.user_account.active if self.user_account else True
         }
 

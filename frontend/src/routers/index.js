@@ -154,7 +154,19 @@ const routes = [
     {
         path: '/placement-drive/:id',
         name: 'DriveDetails',
-        component: DriveDetails
+        component: DriveDetails,
+        children: [
+            {
+                path: 'applications',
+                name: 'DriveApplications',
+                component: ApplicationsList
+            },
+            {
+                path: 'company/:id',
+                name: 'DriveCompanyDetails',
+                component: CompanyDetails
+            }
+        ]
     },
     {
         path: '/placement-drive/:id/edit',
@@ -196,8 +208,13 @@ const routes = [
             {
                 path: 'placement-drives',
                 name: 'StudentDriveList',
-                component: () => import('@/components/student/student_drives.vue')
+                component: () => import('@/components/student/student_drives.vue'),
             },
+            {
+                path: 'placement-drive/:id',
+                name: 'StudentDriveDetails',
+                component: () => import('@/components/drive_details.vue')
+            }
         ]
 
     },

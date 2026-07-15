@@ -51,10 +51,18 @@ onMounted(async () => {
 
 function viewPlacementDrives() {
   if (company.value && company.value.id) {
-    router.push({
-      name: "CompanyDriveList",
-      params: { id: company.value.id },
-    });
+    if (role === 'student') {
+      router.push({
+        name: "StudentDriveList",
+        params: { id: store.getters['user/getStudentId'] || store.getters['user/getUserId'] },
+        query: { search: company.value.name }
+      });
+    } else {
+      router.push({
+        name: "CompanyDriveList",
+        params: { id: company.value.id },
+      });
+    }
   } else {
     console.error("Company ID is not available.");
   }

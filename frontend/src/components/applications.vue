@@ -12,6 +12,7 @@ const loading = ref(true);
 const error = ref("");
 const statusFilter = ref("all");
 const driveId = ref(route.query.drive_id || null);
+const studentId = ref(route.query.student_id || null);
 let message = ref('')
 
 const role = store.getters['user/getUserRole'];
@@ -29,7 +30,10 @@ const fetchApplications = async () => {
     let url = "/api/admin/applications";
     
     if (!isAdmin) {
-      const companyId = route.params.id;
+      let companyId = route.params.id;
+      if (route.name === 'DriveApplications') {
+        companyId = store.getters['user/getCompanyId'] || store.getters['user/getUserId'];
+      }
       if (companyId) {
         url = `/api/company/${companyId}/applications`;
       }
@@ -52,6 +56,10 @@ const filteredApplications = computed(() => {
     filtered = filtered.filter(app => app.drive_id == driveId.value);
   }
   
+  if (studentId.value) {
+    filtered = filtered.filter(app => app.student_id == studentId.value);
+  }
+
   if (statusFilter.value !== "all") {
     filtered = filtered.filter(app => app.status === statusFilter.value);
   }

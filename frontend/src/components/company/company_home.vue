@@ -45,7 +45,8 @@ const upcomingInterviewsThisMonth = computed(() => {
         const interviewDate = new Date(app.interview_date);
         return interviewDate >= startOfToday && 
                interviewDate.getMonth() === currentMonth && 
-               interviewDate.getFullYear() === currentYear;
+               interviewDate.getFullYear() === currentYear &&
+               app.status !== 'rejected' && app.status !== 'placed';
     }).sort((a, b) => new Date(a.interview_date) - new Date(b.interview_date));
 });
 </script>

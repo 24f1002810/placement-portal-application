@@ -84,20 +84,6 @@ const filteredAndSortedDrives = () => {
   return filtered;
 };
 
-const toggleSort = (field) => {
-  if (sortBy.value === field) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortBy.value = field;
-    sortOrder.value = "asc";
-  }
-};
-
-const getSortIcon = (field) => {
-  if (sortBy.value !== field) return "↕️";
-  return sortOrder.value === "asc" ? "↑" : "↓";
-};
-
 const getStatusBadgeClass = (status) => {
   if (status === "approved") return "bg-success";
   if (status === "closed") return "bg-warning text-dark";
@@ -252,20 +238,20 @@ function deleteDrive(driveId) {
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
-              <th class="cursor-pointer" @click="toggleSort('id')" style="width: 60px">
-                ID {{ getSortIcon("id") }}
+              <th class="cursor-pointer" style="width: 60px">
+                ID
               </th>
-              <th class="cursor-pointer" @click="toggleSort('job_title')">
-                Job Title {{ getSortIcon("job_title") }}
+              <th class="cursor-pointer" >
+                Job Title
               </th>
-              <th class="cursor-pointer" @click="toggleSort('company_name')">
-                Company {{ getSortIcon("company_name") }}
+              <th class="cursor-pointer" >
+                Company
               </th>
-              <th class="cursor-pointer" @click="toggleSort('deadline')">
-                Deadline {{ getSortIcon("deadline") }}
+              <th class="cursor-pointer">
+                Deadline
               </th>
-              <th class="cursor-pointer" @click="toggleSort('status')">
-                Status {{ getSortIcon("status") }}
+              <th class="cursor-pointer">
+                Status
               </th>
               <th class="text-center">Actions</th>
             </tr>

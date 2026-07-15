@@ -5,6 +5,7 @@ from flask_security.utils import verify_password
 import uuid
 from models import *
 from datetime import date
+from cache import cache
 import admin, company, student
 
 @app.route('/logout', methods=['POST'])
@@ -135,26 +136,30 @@ def manage_drive(drive_id):
     elif request.method == 'POST':
         data = request.get_json()
         
-        if 'status' in data:
-            drive.status = data['status']
-            db.session.commit()
-            return jsonify({"message": f"Drive status updated to {data['status']}"})
-
-        elif 'deadline' in data and data['deadline']:
+        if 'deadline' in data and data['deadline']:
             try:
                 from datetime import date
-                data['deadline'] = date.fromisoformat(data['deadline'])
+                if isinstance(data['deadline'], str):
+                    data['deadline'] = date.fromisoformat(data['deadline'])
             except ValueError:
                 pass
 
-            for key, value in data.items():
+        for key, value in data.items():
+            if hasattr(drive, key):
                 setattr(drive, key, value)
-            db.session.commit()
-            return jsonify({"message": "Placement Drive updated"})
+                
+        db.session.commit()
+        cache.clear()
+        
+        if 'status' in data and len(data) == 1:
+            return jsonify({"message": f"Drive status updated to {data['status']}"})
+            
+        return jsonify({"message": "Placement Drive updated"})
 
     elif request.method == 'DELETE' and (current_user.has_role('admin') or current_user.has_role('company')):
         db.session.delete(drive)
         db.session.commit()
+        cache.clear()
         return jsonify({"message": "Placement Drive successfully deleted"})
         
 @app.route('/api/placement-drive/<int:drive_id>/apply', methods=['POST'])
@@ -215,6 +220,8 @@ def manage_application(app_id):
             else:
                 application.interview_date = None
         db.session.commit()
+        cache.clear()
+        
         return jsonify({
             "message": "Application updated",
             "status": application.status,
